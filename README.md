@@ -80,7 +80,7 @@ sokowatch/
 
 ## Links
 
-- [Project Board](link-to-github-projects)
+- [Project Board](- [Project Board](https://github.com/users/Jongkuch1/projects/1))
 
 ## License
 
