@@ -8,10 +8,10 @@ Smallholder farmers across East Africa often don't know what their crops are sel
 
 ## Team Members
 
-- Jongkuch Isaac Chol Anyar - Team Lead / DevOps
-- Agertu Diriba Aliko - Backend
-- Betelhem Feleke Cheleno - Frontend, Tests and CI
-- Beni Niyogisubizo - Project Board and Documentation
+- Jongkuch Isaac Chol Anyar (@Jongkuch1) - Team Lead / DevOps
+- Agertu Diriba Aliko (@AgertuDA) - Backend
+- Betelhem Feleke Cheleno (@Betelhemf567) - Frontend, Tests and CI
+- Beni Niyogisubizo (@be-niy) - Project Board and Documentation
 
 ## Project Overview
 
@@ -81,6 +81,17 @@ sokowatch/
 ## Links
 
 - [Project Board](- [Project Board](https://github.com/users/Jongkuch1/projects/1))
+
+## Branch Protection
+
+The `main` branch is protected so that no code reaches it unreviewed:
+- Changes must go through a pull request, with at least 1 approving review.
+- New commits dismiss earlier approvals, so reviewers always see the final code.
+- The `backend-tests` CI check must pass, and branches must be up to date.
+- All review conversations must be resolved before merging.
+- The rules apply to administrators too, so nobody can bypass them.
+
+Pull requests should include `Closes #N` so the matching issue closes automatically.
 
 ## License
 
