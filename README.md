@@ -15,9 +15,9 @@ Smallholder farmers across East Africa often don't know what their crops are sel
 
 ## Project Overview
 
-SokoWatch is a simple web application that shows current prices for common crops across different markets in East Africa. A backend API reads price data and returns it as JSON, and a lightweight web page displays the results in a table.
+SokoWatch is a simple web application that shows current prices for common crops across different markets in East Africa. A Flask backend API reads price data and returns it as JSON, and a React frontend displays the results in a table.
 
-Users can filter prices by crop or by market, and compare the same crop across markets to see where it sells for the most. The first version uses a sample data file. Later versions will move to a database and be containerized and deployed to the cloud.
+Users can filter prices by crop or by market, and compare the same crop across markets to see where it sells for the most. The first version uses a sample JSON data file served by the API. Later versions will move to a real database and be containerized and deployed to the cloud.
 
 **Note:** the prices in this version are sample data for demonstration, not real market prices.
 
@@ -29,25 +29,26 @@ Users can filter prices by crop or by market, and compare the same crop across m
 
 ### Core Features
 
-- **View prices:** see prices for 5+ crops (maize, beans, tomatoes, rice, potatoes) from a data source
+- **View prices:** see prices for 5+ crops (maize, tomatoes, onions, teff, potatoes) from the backend API
 - **Filter by crop or market:** narrow the table to the crop or market you care about
-- **Compare markets:** see the same crop across markets (Nairobi, Kampala, Kigali)
+- **Compare markets:** see the same crop across markets (Sample Markets A-D)
 - **Last updated date:** each price shows when it was last updated
 
 ## Technology Stack
 
-- **Backend**: Python / Flask
-- **Frontend**: HTML, CSS and vanilla JavaScript
-- **Database**: JSON file for now (PostgreSQL planned)
-- **Other**: pytest for testing, GitHub Actions for CI
+- **Frontend**: React 18, JavaScript, Vite, plain CSS
+- **Backend**: Python, Flask, Flask-CORS
+- **Data**: JSON file served by the backend API for now (database planned)
+- **Other**: pytest (backend) and Node's built-in test runner (frontend) for tests, GitHub Actions for CI
 
 ## Getting Started
 
 ### Prerequisites
+- [Node.js](https://nodejs.org/) 18 or newer (includes npm)
 - Python 3.9+
 - Git
 
-### Installation
+### Installation and running
 
 1. Clone the repository
 ```bash
@@ -55,24 +56,31 @@ git clone https://github.com/Jongkuch1/sokowatch.git
 cd sokowatch
 ```
 
-2. Setup instructions will be added once the backend is merged.
-
-3. Run the application
+2. Start the backend (in one terminal)
 ```bash
-# command will be added with the backend
+cd backend
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python app.py       # serves the API at http://localhost:5000
+```
+
+3. Start the frontend (in another terminal)
+```bash
+cd frontend
+npm install
+npm run dev         # opens the app at http://localhost:5173, proxies /api to the backend
 ```
 
 ### Usage
 
-Usage examples will be added with the first working feature.
+Open the dev server URL in your browser to see the price listings table. Use the search box and market filter to narrow results, and the compare section to see a product's price side by side across two markets. If the backend isn't running, the app falls back to bundled sample data and shows a notice. See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/README.md) for full details.
 
 ## Project Structure
 
 ```
 sokowatch/
-├── backend/      # API and tests (planned)
-├── frontend/     # price table page (planned)
-├── data/         # prices.json (planned)
+├── frontend/     # React/Vite app: price table, filters, compare, tests
+├── backend/      # Flask API: serves products/markets/prices as JSON, pytest tests
 ├── .github/      # CODEOWNERS and CI workflow
 ├── README.md
 └── .gitignore
@@ -87,7 +95,7 @@ sokowatch/
 The `main` branch is protected so that no code reaches it unreviewed:
 - Changes must go through a pull request, with at least 1 approving review.
 - New commits dismiss earlier approvals, so reviewers always see the final code.
-- The `backend-tests` CI check must pass, and branches must be up to date.
+- The `frontend-tests` and `backend-tests` CI checks must pass, and branches must be up to date.
 - All review conversations must be resolved before merging.
 - The rules apply to administrators too, so nobody can bypass them.
 
