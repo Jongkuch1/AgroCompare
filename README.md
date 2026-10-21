@@ -15,11 +15,11 @@ Smallholder farmers across East Africa often don't know what their crops are sel
 
 ## Project Overview
 
-SokoWatch is a simple web application that shows current prices for common crops across different markets in East Africa. A Flask backend API reads price data and returns it as JSON, and a React frontend displays the results in a table.
+SokoWatch is a demonstration crop price tracker designed to help farmers and traders explore agricultural price information in one place. A Flask backend reads a sample JSON dataset, and a React frontend displays products, markets, prices, currencies, units, and observation dates.
 
-Users can filter prices by crop or by market, and compare the same crop across markets to see where it sells for the most. The first version uses a sample JSON data file served by the API. Later versions will move to a real database and be containerized and deployed to the cloud.
+Users can search by product name, filter by market, and compare a selected product across two markets. The interface also displays summary statistics for the selected product.
 
-**Note:** the prices in this version are sample data for demonstration, not real market prices.
+**Note:** Prices, market names, locations, and dates in this version are illustrative sample data, not verified current market information.
 
 ### Target Users
 
@@ -30,9 +30,18 @@ Users can filter prices by crop or by market, and compare the same crop across m
 ### Core Features
 
 - **View prices:** see prices for 5+ crops (maize, tomatoes, onions, teff, potatoes) from the backend API
-- **Filter by crop or market:** narrow the table to the crop or market you care about
+- **Search and filter:** search by product name and filter the listings by market
 - **Compare markets:** see the same crop across markets (Sample Markets A-D)
 - **Last updated date:** each price shows when it was last updated
+
+## Current Scope and Limitations
+
+- The backend dataset is stored in `backend/data/prices.json`.
+- The frontend uses bundled sample data if the API cannot be reached and displays a fallback notice.
+- Currency conversion is not implemented. Compare prices only when their currencies and units match.
+- Comparisons exclude transport costs, fees, and other selling expenses.
+- The first version does not include login, a database, payments, or automatic price updates.
+- Database storage, verified data sources, containerization, and cloud deployment are possible future improvements.
 
 ## Technology Stack
 
