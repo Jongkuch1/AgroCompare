@@ -1,10 +1,10 @@
-# AgroCompare
+# SokoWatch
 
-**Compare agricultural prices. Make smarter market decisions.**
+**Know the market price before you sell.**
 
 ## African Context
 
-Smallholder farmers across East Africa often don't know what their crops are selling for in nearby markets. Traders and middlemen usually have that information, so farmers can end up selling below the market price. AgroCompare puts crop prices from several markets in one place that anyone can check from a phone, so farmers can decide where and when to sell.
+Smallholder farmers across East Africa often don't know what their crops are selling for in nearby markets. Traders and middlemen usually have that information, so farmers can end up selling below the market price. SokoWatch puts crop prices from several markets in one place that anyone can check from a phone, so farmers can decide where and when to sell. ("Soko" is Swahili for "market".)
 
 ## Team Members
 
@@ -15,7 +15,7 @@ Smallholder farmers across East Africa often don't know what their crops are sel
 
 ## Project Overview
 
-AgroCompare is a simple web application that shows current prices for common crops across different markets in East Africa. A Flask backend API reads price data and returns it as JSON, and a React frontend displays the results in a table.
+SokoWatch is a simple web application that shows current prices for common crops across different markets in East Africa. A Flask backend API reads price data and returns it as JSON, and a React frontend displays the results in a table.
 
 Users can filter prices by crop or by market, and compare the same crop across markets to see where it sells for the most. The first version uses a sample JSON data file served by the API. Later versions will move to a real database and be containerized and deployed to the cloud.
 
@@ -53,8 +53,8 @@ Users can filter prices by crop or by market, and compare the same crop across m
 
 1. Clone the repository
 ```bash
-git clone https://github.com/Jongkuch1/AgroCompare.git
-cd AgroCompare
+git clone https://github.com/Jongkuch1/sokowatch.git
+cd sokowatch
 ```
 
 2. Start the backend (in one terminal)
@@ -98,7 +98,7 @@ See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/REA
 ## Project Structure
 
 ```
-AgroCompare/
+sokowatch/
 ├── frontend/     # React/Vite app: price table, filters, compare, tests
 ├── backend/      # Flask API: serves products/markets/prices as JSON, pytest tests
 ├── .github/      # CODEOWNERS and CI workflow
@@ -108,10 +108,10 @@ AgroCompare/
 
 ## Links
 
-- [GitHub Repository](https://github.com/Jongkuch1/AgroCompare)
+- [GitHub Repository](https://github.com/Jongkuch1/sokowatch)
 - [Project Board](https://github.com/users/Jongkuch1/projects/7) (Kanban: Backlog, In Progress, Done)
-- [Issues](https://github.com/Jongkuch1/AgroCompare/issues)
-- [Pull Requests](https://github.com/Jongkuch1/AgroCompare/pulls?q=is%3Apr)
+- [Issues](https://github.com/Jongkuch1/sokowatch/issues)
+- [Pull Requests](https://github.com/Jongkuch1/sokowatch/pulls?q=is%3Apr)
 - [Backend README](backend/README.md)
 - [Frontend README](frontend/README.md)
 - [Team Participation Sheet](https://docs.google.com/spreadsheets/d/1apJFWX5-BIjBpPVhniaPmolSvizBKX4rTitMLN0pWt4/edit?gid=0#gid=0)
