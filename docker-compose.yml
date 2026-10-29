@@ -1,0 +1,36 @@
+# Start everything with:  docker-compose up --build
+# App:  http://localhost:8080      API:  http://localhost:5000/api/health
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      FLASK_DEBUG: "0"
+    ports:
+      - "5000:5000"
+    networks:
+      - agro-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - agro-net
+    restart: unless-stopped
+
+networks:
+  agro-net:
+    driver: bridge
