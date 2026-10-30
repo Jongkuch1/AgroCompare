@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-const demoUnusedVariable = "intentionally left unused to test CI lint failure";
 import { products as fallbackProducts, markets as fallbackMarkets, observations as fallbackObservations } from "./data/prices.js";
 import { buildRecords, filterRecords } from "./utils/prices.js";
 import { fetchPrices } from "./api.js";
