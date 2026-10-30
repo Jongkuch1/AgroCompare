@@ -1,0 +1,11 @@
+frontend
+.git
+.github
+**/__pycache__
+**/*.pyc
+backend/venv
+backend/.pytest_cache
+.gitignore
+README.md
+*.md
+.DS_Store
