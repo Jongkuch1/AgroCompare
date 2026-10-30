@@ -129,4 +129,106 @@ Pull requests should include `Closes #N` so the matching issue closes automatica
 
 ## License
 
-MIT License
+Mun with Docker Compose
+
+### Prerequisites
+
+- Git
+- Docker Engine with Docker Compose, or Docker Desktop
+- On Windows with WSL, enable Docker Desktop integration for your Ubuntu distribution.
+- Ports 8080 and 5000 must be available.
+
+Docker installs the application dependencies inside the images, so local Python and Node.js installations are not required for this method.
+
+### Build and start
+
+From the repository root, where `docker-compose.yml` is located:
+
+```bash
+docker compose up --build -d
+```
+
+The first build downloads the base images and installs dependencies. The frontend starts after the backend health check passes.
+
+Open:
+
+- Frontend: http://localhost:8080
+- Backend health check: http://localhost:5000/api/health
+- Price API: http://localhost:5000/api/prices
+
+The frontend serves the built React application through Nginx. Requests to `/api/` are forwarded to the backend service over the shared Compose network.
+
+### Check service status
+
+Run from the repository root:
+
+```bash
+docker compose ps
+curl -f http://localhost:5000/api/health
+curl -f http://localhost:8080/api/health
+```
+
+Both health requests should return `{"status":"ok"}`. The second request checks that the frontend can forward requests to the backend.
+
+### View logs
+
+```bash
+docker compose logs --tail=100
+docker compose logs -f backend frontend
+```
+
+Press Ctrl+C to stop following logs. The containers continue running.
+
+### Stop and rebuild
+
+Stop and remove the application's containers and Compose network:
+
+```bash
+docker compose down
+```
+
+Rebuild and start again after changing application code or dependencies:
+
+```bash
+docker compose up --build -d
+```
+
+The current application uses sample JSON data packaged in the backend image. It has no database or persistent data volume. Changes to the source dataset require rebuilding the backend image.
+
+### Troubleshooting
+
+- **Docker command unavailable in WSL:** enable the Ubuntu distribution under Docker Desktop → Settings → Resources → WSL Integration, then reopen the terminal.
+- **Cannot connect to the Docker daemon:** start Docker Desktop or the Docker Engine and check `docker info`.
+- **Port already allocated:** stop the application or container already using port 5000 or 8080, then retry.
+- **Backend unhealthy or frontend fails to start:** inspect `docker compose logs backend` and check `docker compose ps`.
+- **Page loads but API requests fail:** check both health URLs above and inspect `docker compose logs frontend backend`.
+- **Build fails:** read the first build error, check network access, and retry after correcting the cause.
+
+## Continuous Integration
+
+The workflow is defined in `.github/workflows/ci.yml`.
+
+It runs on:
+
+- Pushes to every branch except `main`.
+- Pull requests targeting `main`.
+
+The workflow contains three jobs:
+
+| Job | Checks |
+| --- | --- |
+| `frontend-tests` | Sets up Node.js 18, installs dependencies, runs frontend linting, runs tests, and builds the frontend |
+| `backend-tests` | Sets up Python 3.11, installs backend dependencies and Flake8, runs linting, and runs pytest |
+| `docker-build` | Builds the backend image from the root Dockerfile and the frontend image from `frontend/Dockerfile` |
+
+Each job fails if one of its commands fails. The Docker job builds images for validation; the current workflow does not publish them to a registry or deploy the application.
+
+### Check a workflow run
+
+1. Open the repository's **Actions** tab.
+2. Select the **CI** workflow.
+3. Open the run for your branch or pull request.
+4. Select a job and expand the failed step to inspect its logs.
+5. Correct the problem, commit the fix, and push to the same branch to trigger another run.
+
+Pull requests display their CI results in the checks section. Required checks and review approvals must be satisfied before merging under the repository's branch protection rules.
