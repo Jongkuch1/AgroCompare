@@ -39,9 +39,9 @@ export default function App() {
     };
   }, []);
 
-  const products = dataset?.products ?? [];
-  const markets = dataset?.markets ?? [];
-  const observations = dataset?.observations ?? [];
+  const products = useMemo(() => dataset?.products ?? [], [dataset]);
+  const markets = useMemo(() => dataset?.markets ?? [], [dataset]);
+  const observations = useMemo(() => dataset?.observations ?? [], [dataset]);
 
   const records = useMemo(() => buildRecords(products, markets, observations), [products, markets, observations]);
   const visibleRecords = useMemo(() => filterRecords(records, query, marketId), [records, query, marketId]);
