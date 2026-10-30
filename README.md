@@ -129,7 +129,7 @@ Pull requests should include `Closes #N` so the matching issue closes automatica
 
 ## License
 
-Mun with Docker Compose
+## Run with Docker Compose
 
 ### Prerequisites
 
