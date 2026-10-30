@@ -44,7 +44,8 @@ def test_prices_returns_joined_shape(client):
     assert set(body.keys()) == {"products", "markets", "observations"}
     assert len(body["observations"]) > 0
     sample = body["observations"][0]
-    assert {"id", "productId", "marketId", "price", "currency", "unit", "date"} <= set(sample.keys())
+    expected_fields = {"id", "productId", "marketId", "price", "currency", "unit", "date"}
+    assert expected_fields <= set(sample.keys())
 
 
 def test_prices_filters_by_product(client):
