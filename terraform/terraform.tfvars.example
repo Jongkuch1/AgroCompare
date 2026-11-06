@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and fill in YOUR values.
+# terraform.tfvars is git-ignored, so nothing private is committed.
+
+# An Azure region your subscription allows. List them with:
+#   az account list-locations -o table
+location = "REPLACE_WITH_ALLOWED_REGION"
+
+# Your public IP, so only you can SSH in. Get it with:  curl -s ifconfig.me
+my_ip_cidr = "REPLACE_WITH_YOUR_IP/32"
+
+# The PUBLIC half of your SSH key (ends in .pub)
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# Optional: leave out to use the ARM_SUBSCRIPTION_ID environment variable
+# subscription_id = "00000000-0000-0000-0000-000000000000"
