@@ -1,0 +1,10 @@
+# Terraform working files and state (state can contain secrets)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfplan
+
+# Real variable values stay on your machine; the example file is committed
+*.tfvars
+!terraform.tfvars.example
