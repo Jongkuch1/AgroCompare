@@ -1,0 +1,87 @@
+# Owner: AgertuDA (F3 Part 3a: Dependency and image scans in CI)
+name: Security scans
+
+# Dependency scanning and container image scanning.
+# Runs on EVERY pull request, on pushes to main, and once a week (new
+# vulnerabilities are published all the time, even when the code has not changed).
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------- Dependency scanning: Python ----------
+  python-dependencies:
+    name: Dependency scan (Python, pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pip-audit
+        run: pip install pip-audit==2.10.1
+      - name: Scan backend/requirements.txt (fails on any known vulnerability)
+        run: pip-audit -r backend/requirements.txt --progress-spinner off
+
+  # ---------- Dependency scanning: JavaScript ----------
+  node-dependencies:
+    name: Dependency scan (Node, npm audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Scan production dependencies (fails on high or critical)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Report build-tool (dev) dependencies (informational, does not fail the build)
+        # vite/esbuild only run on a developer's machine and are not part of the
+        # production image. Findings are documented in SECURITY.md.
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+  # ---------- Container image scanning ----------
+  image-scan:
+    name: Image scan (Trivy, ${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: .
+            dockerfile: Dockerfile
+          - name: frontend
+            context: ./frontend
+            dockerfile: frontend/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the ${{ matrix.name }} image
+        run: docker build -t agrocompare-${{ matrix.name }}:scan -f ${{ matrix.dockerfile }} ${{ matrix.context }}
+      - name: Report HIGH and CRITICAL findings (informational table)
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          image-ref: agrocompare-${{ matrix.name }}:scan
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+      - name: Fail the build on CRITICAL findings that have a fix
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          image-ref: agrocompare-${{ matrix.name }}:scan
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
