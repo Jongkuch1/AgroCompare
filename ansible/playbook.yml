@@ -2,8 +2,43 @@
 - name: Configure AgroCompare server
   hosts: app
   become: true
+
   tasks:
+    # Dependencies
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+
+    - name: Upgrade existing packages
+      ansible.builtin.apt:
+        upgrade: safe
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - ufw
+          - ca-certificates
+          - curl
+        state: present
+
+    - name: Install Docker Engine and the Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add the admin user to the docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
