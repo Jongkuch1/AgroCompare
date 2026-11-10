@@ -55,9 +55,26 @@ resource "azurerm_network_security_group" "app" {
     destination_address_prefix = "*"
   }
 
+  # One rule per extra teammate IP, so each person's access is visible and
+  # independently revocable instead of being merged into one wide rule.
+  dynamic "security_rule" {
+    for_each = { for idx, cidr in var.team_ssh_cidrs : idx => cidr }
+    content {
+      name                       = "allow-ssh-team-${security_rule.key}"
+      priority                   = 101 + security_rule.key
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefix      = security_rule.value
+      destination_address_prefix = "*"
+    }
+  }
+
   security_rule {
     name                       = "allow-app-http"
-    priority                   = 110
+    priority                   = 200
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
@@ -123,6 +140,14 @@ resource "azurerm_linux_virtual_machine" "app" {
   admin_ssh_key {
     username   = var.admin_username
     public_key = file(pathexpand(var.ssh_public_key_path))
+  }
+
+  dynamic "admin_ssh_key" {
+    for_each = var.additional_ssh_public_key_paths
+    content {
+      username   = var.admin_username
+      public_key = file(pathexpand(admin_ssh_key.value))
+    }
   }
 
   os_disk {

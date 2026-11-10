@@ -61,6 +61,23 @@ variable "my_ip_cidr" {
   }
 }
 
+variable "team_ssh_cidrs" {
+  description = "Additional teammate public IPs (CIDR form), beyond my_ip_cidr, allowed to SSH in."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for c in var.team_ssh_cidrs : can(cidrhost(c, 0)) && c != "0.0.0.0/0"])
+    error_message = "Each entry in team_ssh_cidrs must be a valid CIDR such as 203.0.113.10/32, and must not be 0.0.0.0/0."
+  }
+}
+
+variable "additional_ssh_public_key_paths" {
+  description = "Paths to additional teammates' SSH PUBLIC keys allowed to log in to the VM, beyond ssh_public_key_path."
+  type        = list(string)
+  default     = []
+}
+
 variable "app_port" {
   description = "Public TCP port of the web frontend (docker-compose maps it to 8080)."
   type        = number
