@@ -1,0 +1,9 @@
+---
+- name: Configure AgroCompare server
+  hosts: app
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
