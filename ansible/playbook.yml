@@ -3,6 +3,11 @@
   hosts: app
   become: true
 
+  vars:
+    app_dir: /opt/agrocompare
+    repo_url: https://github.com/Jongkuch1/AgroCompare.git
+    repo_branch: main
+
   tasks:
     # Dependencies
     - name: Update apt cache
@@ -41,4 +46,19 @@
         name: "{{ ansible_user }}"
         groups: docker
         append: true
+
+    # Deploy the app
+    - name: Clone or update the application repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: "{{ repo_branch }}"
+        force: true
+      register: app_checkout
+
+    - name: Build and start the application with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        build: always
+        state: present
 
