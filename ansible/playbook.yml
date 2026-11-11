@@ -1,0 +1,107 @@
+---
+- name: Configure AgroCompare server
+  hosts: app
+  become: true
+
+  vars:
+    app_dir: /opt/agrocompare
+    repo_url: https://github.com/Jongkuch1/AgroCompare.git
+    repo_branch: main
+
+  tasks:
+    # Dependencies
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Upgrade existing packages
+      ansible.builtin.apt:
+        upgrade: safe
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - ufw
+          - ca-certificates
+          - curl
+        state: present
+
+    - name: Install Docker Engine and the Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Start and enable Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add the admin user to the docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+
+    # Deploy the app
+    - name: Clone or update the application repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: "{{ repo_branch }}"
+        force: true
+      register: app_checkout
+
+    - name: Build and start the application with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        build: always
+        state: present
+
+    # Firewall
+    - name: Set default UFW policy to deny incoming traffic
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Allow SSH (22)
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow the application port (8080)
+      community.general.ufw:
+        rule: allow
+        port: "8080"
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+    # SSH hardening
+    - name: Disable SSH password authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PasswordAuthentication"
+        line: "PasswordAuthentication no"
+      notify: Restart sshd
+
+    - name: Disable SSH root login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^#?PermitRootLogin"
+        line: "PermitRootLogin no"
+      notify: Restart sshd
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.systemd:
+        name: ssh
+        state: restarted
+
