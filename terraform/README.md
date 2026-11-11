@@ -88,6 +88,28 @@ Hand the server to Ansible:
 terraform output -raw ansible_inventory > ../ansible/inventory/hosts.ini
 ```
 
+## Giving a teammate SSH access
+
+To let another teammate reach the VM (for the Ansible work, for example)
+without changing your own `my_ip_cidr` or `ssh_public_key_path`, add their
+IP and public key in your `terraform.tfvars`:
+
+```hcl
+team_ssh_cidrs                  = ["203.0.113.20/32"]
+additional_ssh_public_key_paths = ["~/.ssh/teammate_id.pub"]
+```
+
+Each entry gets its own NSG rule and `admin_ssh_key` block, so access stays
+visible per person and can be revoked individually later by removing their
+entry and running `terraform apply` again. Then run:
+
+```bash
+terraform apply
+terraform output public_ip_address
+```
+
+and send them the IP.
+
 ## Clean up (important: a running VM costs credit)
 
 ```bash
