@@ -71,6 +71,8 @@ jobs:
         run: docker build -t agrocompare-${{ matrix.name }}:scan -f ${{ matrix.dockerfile }} ${{ matrix.context }}
       - name: Report HIGH and CRITICAL findings (informational table)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: agrocompare-${{ matrix.name }}:scan
           format: table
@@ -79,6 +81,8 @@ jobs:
           exit-code: "0"
       - name: Fail the build on CRITICAL findings that have a fix
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: agrocompare-${{ matrix.name }}:scan
           format: table
