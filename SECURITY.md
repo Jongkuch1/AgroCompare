@@ -33,12 +33,27 @@ were fixed; remediation has not been verified.
 
 ## Container images
 
-Both the backend and frontend Docker images built successfully on PR #33.
-Both jobs then failed during installation of Trivy v0.69.3 with exit code 1.
-Neither image was scanned, no vulnerability report was produced, and the
-critical-findings check was skipped.
+Both the backend and frontend Docker images built successfully on PR #33,
+but both jobs then failed during installation of Trivy v0.69.3 with exit
+code 1. Neither image was scanned at that point.
 
-The workflow is configured to report high and critical findings with
-available fixes and to fail on critical findings with available fixes.
-Follow-up: investigate the installation failure, rerun both image scans,
-and record the findings and any remediation here.
+The root cause (PR #37): `setup-trivy` downloads the Trivy binary via the
+GitHub API, which caps unauthenticated requests at 60/hour. CI was hitting
+that limit before the scan ever ran. The fix passes `GITHUB_TOKEN` to both
+Trivy steps so the download uses the authenticated 5000/hour limit instead.
+
+With the scan actually running, the frontend image came back with 3
+CRITICAL findings, all with a fix available:
+
+| Package | Installed | Fixed | Advisory |
+| --- | --- | --- | --- |
+| brotli-libs | 1.1.0-r2 | 1.1.1-r0 | CVE-2026-111497 |
+| libcrypto3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
+| libssl3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
+
+These come from Alpine packages baked into the pinned `nginx:1.27-alpine`
+base image. Fixed (also PR #37) by running `apk upgrade` in that build
+stage, which pulls in Alpine's patched package versions without changing
+the base image tag. The backend image had no CRITICAL findings. Both image
+scans now pass — evidence:
+[Security scans on PR #37](https://github.com/Jongkuch1/AgroCompare/pull/37/checks).
