@@ -1,0 +1,21 @@
+---
+- name: Set default UFW policy to deny incoming traffic
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Allow SSH (22)
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow the application port
+  community.general.ufw:
+    rule: allow
+    port: "{{ app_port | string }}"
+    proto: tcp
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
