@@ -59,7 +59,7 @@
     - name: Build and start the application with Docker Compose
       community.docker.docker_compose_v2:
         project_src: "{{ app_dir }}"
-        build: always
+        build: "{{ 'always' if app_checkout.changed else 'policy' }}"
         state: present
 
     # Firewall
