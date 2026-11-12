@@ -57,3 +57,13 @@ stage, which pulls in Alpine's patched package versions without changing
 the base image tag. The backend image had no CRITICAL findings. Both image
 scans now pass — evidence:
 [Security scans on PR #37](https://github.com/Jongkuch1/AgroCompare/pull/37/checks).
+
+## Secrets
+
+Gitleaks scans every commit on every pull request and push to `main`, plus
+a weekly scheduled run. A local run against the full commit history (`gitleaks
+detect --source . --log-opts="--all"`) came back clean: no leaked keys,
+tokens, or credentials in any commit. `.gitignore` already keeps
+`terraform.tfvars` and `*.tfstate` (where real secrets would otherwise end
+up) out of version control, so this is a second, independent check on top
+of that.
