@@ -2,11 +2,11 @@
 
 This configures the Azure VM Terraform creates and deploys AgroCompare onto it.
 
-It does four things:
-- Installs Docker and the Compose plugin
-- Clones this repo onto the server and runs `docker compose` to build/start the app
-- Turns on UFW, blocks everything by default, opens only SSH and 8080
-- Turns off SSH password login and root login
+It's split into four roles, run in this order:
+- `docker` — installs Docker and the Compose plugin
+- `deploy` — clones this repo onto the server and runs `docker compose` to build/start the app
+- `firewall` — turns on UFW, blocks everything by default, opens only SSH and the app port
+- `ssh_hardening` — turns off SSH password login and root login
 
 ## Before running it
 
@@ -23,13 +23,13 @@ ansible-galaxy collection install community.docker community.general
 
 ## Setup
 
-Get the VM's IP:
+There are two ways to tell Ansible where the VM is:
+
+**Static (`inventory/hosts.ini`)** — get the IP yourself and hardcode it:
 
 ```bash
 cd ../terraform && terraform output public_ip_address
 ```
-
-Put it in `inventory/hosts.ini`:
 
 ```ini
 [app]
@@ -38,14 +38,28 @@ agrocompare-vm ansible_host=<ip here> ansible_user=azureuser ansible_ssh_private
 
 Make sure the key matches whichever public key you gave Terraform.
 
+**Dynamic (`inventory/dynamic_inventory.py`)** — reads the IP straight out of
+Terraform's state instead, so it's always right even after the VM gets
+recreated. Needs `../terraform` to already be applied. Set
+`ANSIBLE_SSH_PRIVATE_KEY_FILE` if your key isn't `~/.ssh/alu-devops`:
+
+```bash
+ANSIBLE_SSH_PRIVATE_KEY_FILE=~/.ssh/your_key ansible-inventory -i inventory/dynamic_inventory.py --list
+```
+
 ## Run it
 
 ```bash
 cd ansible
+ansible-playbook -i inventory/dynamic_inventory.py playbook.yml
+# or, with the static file:
 ansible-playbook -i inventory/hosts.ini playbook.yml
 ```
 
-First run takes a few minutes. Running it again is fine, it won't redo things that are already set up correctly (docker compose always reports "changed" since it rebuilds, everything else only changes the first time).
+First run takes a few minutes. Running it again is fine — every task,
+including the Compose deploy, only reports "changed" when something
+actually changed (confirmed by running it twice back to back and comparing
+the `changed` count in the play recap).
 
 Confirm it worked:
 
@@ -57,7 +71,7 @@ curl http://<ip>:8080/api/health
 Syntax check only, doesn't touch the server:
 
 ```bash
-ansible-playbook -i inventory/hosts.ini playbook.yml --syntax-check
+ansible-playbook -i inventory/dynamic_inventory.py playbook.yml --syntax-check
 ```
 
 ## If something breaks
