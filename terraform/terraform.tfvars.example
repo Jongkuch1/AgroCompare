@@ -1,3 +1,4 @@
+# Owner: Jongkuch1 (Summative Part 1: network, bastion, private VM, load balancer)
 # Copy this file to terraform.tfvars and fill in YOUR values.
 # terraform.tfvars is git-ignored, so nothing private is committed.
 
@@ -5,17 +6,11 @@
 #   az account list-locations -o table
 location = "REPLACE_WITH_ALLOWED_REGION"
 
-# Your public IP, so only you can SSH in. Get it with:  curl -s ifconfig.me
+# Your public IP, so only you can SSH to the bastion. Get it with:  curl -s ifconfig.me
 my_ip_cidr = "REPLACE_WITH_YOUR_IP/32"
 
 # The PUBLIC half of your SSH key (ends in .pub)
 ssh_public_key_path = "~/.ssh/id_rsa.pub"
-
-# Optional: give other teammates SSH access too, without changing
-# my_ip_cidr or ssh_public_key_path above. Each entry is its own
-# NSG rule / SSH key, so access is visible and revocable per person.
-# team_ssh_cidrs = ["203.0.113.20/32", "198.51.100.5/32"]
-# additional_ssh_public_key_paths = ["~/.ssh/teammate1.pub", "~/.ssh/teammate2.pub"]
 
 # Optional: leave out to use the ARM_SUBSCRIPTION_ID environment variable
 # subscription_id = "00000000-0000-0000-0000-000000000000"

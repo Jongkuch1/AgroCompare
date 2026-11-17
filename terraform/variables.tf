@@ -1,3 +1,4 @@
+# Owner: Jongkuch1 (Summative Part 1: network, bastion, private VM, load balancer)
 variable "subscription_id" {
   description = "Azure subscription ID. Leave null to use the ARM_SUBSCRIPTION_ID environment variable."
   type        = string
@@ -27,32 +28,44 @@ variable "vnet_address_space" {
   default     = ["10.20.0.0/16"]
 }
 
-variable "subnet_prefix" {
-  description = "Address prefix of the subnet the VM lives in (must sit inside vnet_address_space)."
+variable "public_subnet_prefix" {
+  description = "Subnet for the bastion host (inside vnet_address_space)."
   type        = string
   default     = "10.20.1.0/24"
 }
 
-variable "vm_size" {
-  description = "Azure VM size. Standard_B2s is enough to run the two containers."
+variable "private_subnet_prefix" {
+  description = "Subnet for the app VM. It has no public IPs (inside vnet_address_space)."
+  type        = string
+  default     = "10.20.2.0/24"
+}
+
+variable "app_vm_size" {
+  description = "Azure VM size of the app server."
   type        = string
   default     = "Standard_B2s"
 }
 
+variable "bastion_vm_size" {
+  description = "Azure VM size of the bastion host (a small jump box is enough)."
+  type        = string
+  default     = "Standard_B1s"
+}
+
 variable "admin_username" {
-  description = "Linux admin user created on the VM (SSH key login only, no password)."
+  description = "Linux admin user created on both VMs (SSH key login only, no password)."
   type        = string
   default     = "azureuser"
 }
 
 variable "ssh_public_key_path" {
-  description = "Path to the SSH PUBLIC key that will be allowed to log in to the VM."
+  description = "Path to the SSH PUBLIC key that will be allowed to log in to the VMs."
   type        = string
   default     = "~/.ssh/id_rsa.pub"
 }
 
 variable "my_ip_cidr" {
-  description = "Your public IP in CIDR form (for example 203.0.113.10/32). Only this address may reach SSH."
+  description = "Your public IP in CIDR form (for example 203.0.113.10/32). Only this address may reach SSH on the bastion."
   type        = string
 
   validation {
@@ -61,25 +74,8 @@ variable "my_ip_cidr" {
   }
 }
 
-variable "team_ssh_cidrs" {
-  description = "Additional teammate public IPs (CIDR form), beyond my_ip_cidr, allowed to SSH in."
-  type        = list(string)
-  default     = []
-
-  validation {
-    condition     = alltrue([for c in var.team_ssh_cidrs : can(cidrhost(c, 0)) && c != "0.0.0.0/0"])
-    error_message = "Each entry in team_ssh_cidrs must be a valid CIDR such as 203.0.113.10/32, and must not be 0.0.0.0/0."
-  }
-}
-
-variable "additional_ssh_public_key_paths" {
-  description = "Paths to additional teammates' SSH PUBLIC keys allowed to log in to the VM, beyond ssh_public_key_path."
-  type        = list(string)
-  default     = []
-}
-
 variable "app_port" {
-  description = "Public TCP port of the web frontend (docker-compose maps it to 8080)."
+  description = "TCP port the web frontend listens on, on the app VM (docker-compose maps 8080 to nginx)."
   type        = number
   default     = 8080
 
