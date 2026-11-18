@@ -1,3 +1,4 @@
+# Owner: Jongkuch1 (Summative Part 1: network, bastion, private VM, load balancer)
 terraform {
   required_version = ">= 1.5.0"
 

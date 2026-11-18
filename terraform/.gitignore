@@ -1,3 +1,4 @@
+# Owner: Jongkuch1 (Summative Part 1: network, bastion, private VM, load balancer)
 # Terraform working files and state (state can contain secrets)
 .terraform/
 *.tfstate
