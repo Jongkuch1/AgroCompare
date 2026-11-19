@@ -1,4 +1,4 @@
-# Owner: AgertuDA (F3 Part 3a: Dependency and image scans in CI)
+# Owner: AgertuDA (Summative Part 2: container registry, managed database, security gates)
 name: Security scans
 
 # Dependency scanning and container image scanning.
@@ -51,7 +51,6 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high
 
-  # ---------- Secret scanning ----------
   secret-scan:
     name: Secret scan (Gitleaks)
     runs-on: ubuntu-latest
@@ -81,23 +80,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the ${{ matrix.name }} image
         run: docker build -t agrocompare-${{ matrix.name }}:scan -f ${{ matrix.dockerfile }} ${{ matrix.context }}
+      # Trivy runs from its official container image, so no third-party action
+      # (and no action version or commit hash that can break) is needed.
       - name: Report HIGH and CRITICAL findings (informational table)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          image-ref: agrocompare-${{ matrix.name }}:scan
-          format: table
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "0"
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.58.0 image \
+            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 \
+            agrocompare-${{ matrix.name }}:scan
       - name: Fail the build on CRITICAL findings that have a fix
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          image-ref: agrocompare-${{ matrix.name }}:scan
-          format: table
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.58.0 image \
+            --severity CRITICAL --ignore-unfixed --exit-code 1 \
+            agrocompare-${{ matrix.name }}:scan
