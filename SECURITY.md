@@ -1,4 +1,4 @@
-# Security scan findings — Formative 3
+# Security scan findings
 
 Evidence: [Security scans on PR #33](https://github.com/Jongkuch1/AgroCompare/pull/33/checks).
 
@@ -67,3 +67,23 @@ tokens, or credentials in any commit. `.gitignore` already keeps
 `terraform.tfvars` and `*.tfstate` (where real secrets would otherwise end
 up) out of version control, so this is a second, independent check on top
 of that.
+
+## Current automated scans
+
+The `security.yml` workflow runs on pull requests, pushes to `main`,
+a weekly schedule, and manual requests.
+
+| Scan | Tool | Failure condition |
+| --- | --- | --- |
+| Python dependencies | pip-audit | Any known vulnerability |
+| Production JavaScript dependencies | npm audit | High or critical findings |
+| Development dependencies | npm audit | Informational only |
+| Secrets | Gitleaks | Detected leaks |
+| Backend and frontend images | Trivy | Critical findings with an available fix |
+
+Trivy currently excludes unfixed vulnerabilities from both its report
+and its failure gate. A passing scan therefore does not establish that
+the images contain no critical vulnerabilities.
+
+Infrastructure scanning and deployment security evidence will be added
+when the corresponding workflows are integrated and their results verified.
