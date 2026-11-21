@@ -2,159 +2,136 @@
 
 # Individual Summative Demo Checklist
 
-Each team member records their own demonstration of the application
-and the complete DevOps workflow.
+Each person records their own demonstration.
 
 ## Recording Requirements
 
-- Target 10–15 minutes. Assessors stop watching after 18 minutes.
-- Record at 720p or higher.
-- Keep your face visible in a small webcam overlay.
-- Increase terminal and editor font sizes.
-- Narrate naturally while demonstrating real commands and outputs.
-- Do not read from a script.
-- Record in one continuous take. Minor cuts for technical issues
-  are acceptable; do not combine separate recording sessions.
-- Announce each prompt number before demonstrating it.
-- Show the running system rather than slides or screenshots.
-- Keep passwords, private keys and tokens off screen.
+- Target 10–15 minutes; assessors stop after 18 minutes.
+- Minimum 720p.
+- Keep your face visible in a webcam overlay.
+- Use readable terminal, browser and editor fonts.
+- Narrate naturally without reading a script.
+- Show actual commands and outputs.
+- Record one continuous take; minor technical cuts are acceptable.
+- Announce each prompt number.
+- Keep passwords, tokens and private keys off screen.
 
-## Video Submission
+## Upload Requirements
 
-Use this exact title format:
+Upload to YouTube as **unlisted**, at least 24 hours before the deadline.
 
-[Your Name] - Amani Market Systems - Summative Demo
+Title:
+
+`[Your Name] - Amani Market Systems - Summative Demo`
 
 For Beni:
 
-Beni Niyogisubizo - Amani Market Systems - Summative Demo
+`Beni Niyogisubizo - Amani Market Systems - Summative Demo`
 
-Keep AgroCompare as the application name in the demonstration.
+Use AgroCompare as the application name elsewhere.
 
-Upload to YouTube as **unlisted**, at least 24 hours before the deadline.
-Allow time for processing, and test the link in an incognito window
-without signing in.
+Wait for processing and test the link in an incognito window without signing in.
 
-## The 10 Demo Prompts
+## The 10 Prompts
 
-Spend approximately 1–1.5 minutes on each prompt.
+Spend approximately 1–1.5 minutes on each.
 
-| # | Prompt | What to demonstrate |
+| # | Prompt | Demonstrate |
 | --- | --- | --- |
-| 1 | Project Foundation — F1 | Open the GitHub project board and current branch protection settings. Explain how issues, reviews and required checks support collaboration. |
-| 2 | Application Baseline — F1 | Run the application and demonstrate its features. Show the README setup instructions. Check for fallback-data notices so the page does not conceal an unavailable API. |
-| 3 | Containerization — F2 | Open the Dockerfiles, build and start the application with Docker Compose, and demonstrate it at localhost:8080. |
-| 4 | CI Pipeline — F2 | Show a passing GitHub Actions run and a failing run that caught a real problem. Open the relevant steps and explain the failure. |
-| 5 | Infrastructure as Code | Open the Terraform file structure. Run `terraform plan` or show recent pipeline plan output. Identify the network, bastion, private VM, load balancer, registry, database and security groups. |
-| 6 | Configuration Management | Open the Ansible playbook, roles and inventory. Run the playbook against the target environment or show terminal output from a recent execution. Explain the task that prepares the application to serve traffic. |
-| 7 | Security Scanning | Show a real scan and its results. Explain one finding and its remediation, justified suppression or documented risk decision. Explain the actual failure policy and any excluded findings. |
-| 8 | Full Pipeline and Deployment | Merge an approved PR into main to trigger CD. Show the checks, image publication and Ansible deployment stages. Open the live application and demonstrate usable features. |
-| 9 | Observability | Show the live health endpoint, container status or logs. Explain what the signal proves and its limits. |
-| 10 | Reflection and Ownership | Show commit history across the Formatives and Summative. Explain your most important design decision, the weakest part of the pipeline, and what you would fix first before a real production launch. |
-
-## Integration Readiness
-
-The reviewed implementation still has pending integration work.
-Recheck this list against the latest repository before recording.
-
-- [ ] CD workflow exists and deploys after a merge to main.
-- [ ] CD runs the required checks before deployment.
-- [ ] Images are published to the private registry.
-- [ ] Ansible authenticates to the registry and deploys those images.
-- [ ] Inventory uses the current Terraform outputs and reaches the
-      private VM through the bastion.
-- [ ] Automated IaC scanning is integrated.
-- [ ] Critical-vulnerability failure behavior meets the assignment.
-- [ ] Required checks are enforced by GitHub branch protection.
-- [ ] The application is publicly accessible and usable.
-- [ ] README contains the verified live URL.
-- [ ] Security findings and limitations match actual scan evidence.
-
-An unfinished integration cannot be demonstrated as completed.
-Documentation and a green build alone do not prove deployment.
+| 1 | Project Foundation | Project board, branch protection, reviews and required checks |
+| 2 | Application Baseline | Running application, features and README setup instructions |
+| 3 | Containerization | Dockerfiles, Compose build/start and application on localhost:8080 |
+| 4 | CI Pipeline | Passing run and genuine failing run; explain the relevant logs |
+| 5 | Infrastructure as Code | Terraform structure and a plan or recent pipeline plan output; identify network, bastion, private VM, registry, database and load balancer |
+| 6 | Configuration Management | Playbook and inventory; execution or recent terminal output; explain the important configuration task |
+| 7 | Security Scanning | Actual scan results and one finding with its remediation or justified decision |
+| 8 | Full Pipeline and Deployment | Merge an approved PR into main; show CD stages, successful deployment and usable live application |
+| 9 | Observability | Live health endpoint, container status or logs; explain the signal and its limitations |
+| 10 | Reflection and Ownership | Commit history, most important decision, weakest pipeline area and first improvement before production |
 
 ## Before Recording
 
-- [ ] Read all 10 prompts and prepare navigation bookmarks.
-- [ ] Confirm the public application and API work.
-- [ ] Confirm frontend filtering and market comparison work.
-- [ ] Confirm the frontend is not silently using fallback data.
-- [ ] Prepare a passing CI run and a genuine failing CI run.
-- [ ] Prepare recent Terraform plan evidence.
-- [ ] Prepare Ansible execution output.
-- [ ] Prepare real security findings and remediation evidence.
-- [ ] Coordinate the deployment demonstration with teammates.
-- [ ] Use a meaningful change for the demonstration PR.
-- [ ] Confirm cloud resources will stay available during recording.
-- [ ] Test webcam, microphone and screen readability.
-- [ ] Close unrelated windows and disable notifications.
-- [ ] Avoid displaying credentials, state files or sensitive outputs.
+- [ ] Final infrastructure and deployment integrations are complete.
+- [ ] Required checks run and are enforced before merging.
+- [ ] Images are published to ACR and deployed through Ansible.
+- [ ] Private VM access works through the bastion.
+- [ ] IaC and image scans have actual results available.
+- [ ] Live application URL works.
+- [ ] Filters and comparison work without an API fallback notice.
+- [ ] README contains the verified live URL.
+- [ ] Security findings match scan evidence.
+- [ ] Passing and genuinely failing CI runs are ready.
+- [ ] Recent Terraform plan and Ansible output are ready.
+- [ ] Deployment demo is coordinated with teammates.
+- [ ] Webcam, microphone and readability are tested.
+- [ ] Notifications and unrelated windows are closed.
+- [ ] No credentials or sensitive outputs will be displayed.
 
 ## Useful Commands
 
-Run these from the repository root unless noted otherwise.
+From the repository root:
 
-### Local containers
-
+```bash
 docker compose up --build -d
 docker compose ps
 curl -fsS http://localhost:8080/api/health
 docker compose logs --tail=100 backend frontend
-
-### Commit history
-
 git --no-pager log --graph --decorate --oneline -25
+```
 
-### Public health
+For the deployed application:
 
+```bash
 curl -fsS http://<load-balancer-ip>/api/health
+```
 
-Replace the placeholder with the verified live address.
+Replace the placeholder with the verified address.
 
-The expected health response is {"status":"ok"}.
-This verifies the responding request path, not database connectivity
-or every application feature.
+Expected response:
 
-Only the backend currently has a Compose health check.
+```json
+{"status":"ok"}
+```
+
+Only the backend currently has a Compose health check. A successful health
+response does not verify every feature or database connectivity.
 
 ## Reflection Preparation
 
-Prepare your own answers rather than reading a prepared script:
+Answer in your own words:
 
 1. What was the single most important design decision you made?
 2. What is the weakest part of the pipeline today?
-3. What would you fix first if the system were going live tomorrow?
+3. What would you fix first if the system went live tomorrow?
 
-Explain your individual contribution and distinguish it from
-teammates' work.
+Explain your contribution and distinguish it from teammates' work.
 
 ## After Recording
 
-- [ ] Confirm every prompt is covered in order.
-- [ ] Confirm your face and narration are present.
-- [ ] Confirm the video is readable and no secrets are exposed.
-- [ ] Confirm the duration is within the required limits.
-- [ ] Upload as unlisted with the required title.
-- [ ] Wait for YouTube processing to finish.
-- [ ] Test the link in an incognito window without signing in.
+- [ ] All 10 prompts covered in order.
+- [ ] Face visible and narration audible.
+- [ ] Commands and output readable.
+- [ ] No secrets exposed.
+- [ ] Duration within the required limits.
+- [ ] Correct title and unlisted visibility.
+- [ ] YouTube processing complete.
+- [ ] Link works in incognito without signing in.
 
 ## Canvas Submission
 
-URL field:
+**URL field:** GitHub repository URL.
 
-- GitHub repository URL.
-
-Text entry box:
+**Text entry box:**
 
 - Live Application URL.
 - YouTube Demo Video Link.
 - Summative PR URL into main.
 
-## Infrastructure Teardown
+## Teardown
 
-Keep the live application available for the agreed assessment period.
-Coordinate teardown with the team and instructor.
+Coordinate with the team and assessment requirements. Keep the live application
+available for the agreed review period.
 
-When the environment is no longer required, the infrastructure owner
-can review and run `terraform destroy` from the Terraform directory.
-This removes managed resources, including the database.
+When it is no longer required, review and run `terraform destroy` from
+the Terraform directory. This removes managed infrastructure, including
+the database.

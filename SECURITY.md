@@ -1,68 +1,123 @@
-# Security Findings and Limitations
+# Security
 
-This document records reported security findings, remediation and the
-configuration reviewed for the Summative.
+**Owner:** be-niy — Summative Part 4: documentation and observability.
 
-Historical scan results apply to the commits scanned at that time.
-They do not establish the security of the latest images or deployment.
+This document explains the project's security checks, reported findings,
+remediation and infrastructure controls.
 
-## 1. Backend Dependencies
+Historical results describe the revisions scanned at that time. Current
+deployment and scan evidence must be checked before final submission.
 
-The previous security record reports that the initial pip-audit run
-found 12 entries across three packages, representing six unique
-advisory IDs.
+## Reporting a Problem
 
-PR #33 updated the affected dependencies:
+Contact a repository maintainer privately about vulnerabilities.
 
-| Package | Before | After | Reported advisory IDs |
+If private vulnerability reporting is enabled, use the repository's
+Security tab and select “Report a vulnerability.” Avoid publishing
+credentials or exploit details in a public issue.
+
+## What Is Scanned, and When
+
+Dependency, image and secret checks run through the security workflow on
+pull requests, pushes to main, a weekly schedule and manual requests.
+
+The colleague-provided plan also includes Checkov in `iac-scan.yml`.
+Confirm that workflow's integration and triggers against the final repository.
+
+| Scan | Tool | Scope | Failure policy |
 | --- | --- | --- | --- |
-| Flask | 3.0.3 | 3.1.3 | PYSEC-2026-2151 |
-| Flask-CORS | 4.0.1 | 6.0.5 | PYSEC-2024-71, PYSEC-2026-1383, PYSEC-2026-1384, PYSEC-2026-1385 |
-| pytest | 8.3.3 | 9.2.0 | PYSEC-2026-1845 |
+| Python dependencies | pip-audit | backend/requirements.txt | Known vulnerabilities |
+| Production JavaScript dependencies | npm audit | Frontend dependencies | High or critical findings |
+| Full JavaScript dependency audit | npm audit | Includes development tools | Informational |
+| Container images | Trivy | Backend and frontend images | Critical findings with available fixes |
+| Secrets | Gitleaks | Repository history available to the scan | Detected leaks |
+| Infrastructure | Checkov | Terraform, Ansible, Dockerfiles and workflows | Planned gate: failed checks except documented suppressions |
 
-The previous record states that Agertu's local audit reported no known
-vulnerabilities after these changes, all six backend tests passed,
-and the Python dependency scan passed in the observed PR run.
+Trivy currently uses `--ignore-unfixed`. Unfixed vulnerabilities are excluded
+from the report and failure gate. Review this policy against the assignment's
+critical-vulnerability requirement.
+
+## Findings and Decisions
+
+### 1. Python Dependencies
+
+The earlier project record reports 12 entries across three packages,
+representing six unique advisory IDs.
+
+| Package | Previous version | Reported advisories | Updated version |
+| --- | --- | --- | --- |
+| Flask | 3.0.3 | PYSEC-2026-2151 | 3.1.3 |
+| Flask-CORS | 4.0.1 | PYSEC-2024-71, PYSEC-2026-1383, PYSEC-2026-1384, PYSEC-2026-1385 | 6.0.5 |
+| pytest | 8.3.3 | PYSEC-2026-1845 | 9.2.0 |
+
+The colleague-reported result after upgrading was no known vulnerabilities,
+six passing backend tests on Python 3.11, and clean Flake8 output.
 
 Historical evidence:
 [PR #33 checks](https://github.com/Jongkuch1/AgroCompare/pull/33/checks).
 
-These package versions and advisory identifiers are retained from the
-earlier project record. Confirm them against the original scan logs
-when preparing the final evidence.
+Retain the original logs to support the reported advisory identifiers,
+package versions and results.
 
-## 2. Frontend Dependencies
+### 2. JavaScript Dependencies
 
-The previous full npm audit reported two findings: one moderate and
-one high. The recorded output identified esbuild advisory
-`GHSA-67mh-4wv8-2f99` in Vite's dependency tree. npm proposed a breaking
-Vite upgrade.
+The colleague-provided record identifies development-tool findings involving
+esbuild and Vite, including `GHSA-67mh-4wv8-2f99`.
 
-Agertu's reported production-only audit, using `npm audit --omit=dev`,
-found zero vulnerabilities. The Node audit job passed in the observed
-PR run.
+The reported production-only audit returned zero vulnerabilities.
 
-The current workflow:
+**Decision:** Defer the breaking frontend toolchain upgrade for separate
+testing. The production frontend serves built static files through Nginx.
 
-- Fails on high or critical findings in production dependencies.
-- Runs a full dependency audit as an informational step.
+Development tools also run during builds, so their findings remain relevant
+even when they are absent from the final runtime image.
 
-The production-only result does not establish that development
-dependency findings were fixed. Development dependencies execute
-during development and builds, so their findings still require review.
+**Mitigation:** Do not expose the development server to untrusted networks.
 
-## 3. Container Images
+**Review:** Reassess during the next frontend upgrade and scheduled audits.
+Confirm the required target version against the current audit output.
 
-### Historical findings and remediation
+### 3. Infrastructure Scanning with Checkov
 
-The earlier project record states that both images built on PR #33,
-but Trivy installation failed before either image was scanned.
+The following findings and results were supplied by the colleague responsible
+for this work. They describe the earlier infrastructure review.
 
-PR #37 addressed a reported GitHub API rate-limit problem by supplying
-`GITHUB_TOKEN` to the Trivy action.
+| Check | Reported location | Decision | Reported rationale |
+| --- | --- | --- | --- |
+| CKV_AZURE_50 | terraform/main.tf | Fixed | Disable VM extension operations because configuration uses Ansible |
+| CKV2_GHA_1 | .github/workflows/ci.yml | Fixed | Restrict workflow token permissions |
+| CKV_AZURE_119 | terraform/main.tf | Accepted for the earlier design | Public application access constrained by network security rules |
+| CKV_DOCKER_3 | frontend/Dockerfile | Accepted | Nginx master starts as root; consider an unprivileged image |
+| CKV2_ANSIBLE_1 | Earlier ansible/roles/app | Accepted | HTTP checks target localhost |
 
-Once scanning ran, the frontend image reportedly contained these
-three critical package findings:
+The colleague reported:
+
+- Terraform: 14 passed checks and one documented skip.
+- Ansible: 10 passed checks.
+- Dockerfiles: 88 passed checks.
+- GitHub Actions: 164 passed checks.
+
+**Evidence to attach:** Original Checkov output or workflow run URL and commit.
+
+These counts must not be presented as results for the new architecture
+without rescanning it. The current private application VM changes the context
+of the earlier public-IP exception.
+
+New registry and database resources include additional inline suppression
+comments. Review their check identifiers and stated reasons with the
+infrastructure owner and include the final scan results.
+
+### 4. Container Images with Trivy
+
+#### Earlier Findings
+
+The earlier record states that images built successfully on PR #33, but
+scanner installation failed before scans completed.
+
+PR #37 addressed a reported GitHub API rate-limit issue by authenticating
+the Trivy action download.
+
+The frontend scan subsequently reported:
 
 | Package | Installed | Fixed | Reported advisory |
 | --- | --- | --- | --- |
@@ -70,467 +125,128 @@ three critical package findings:
 | libcrypto3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
 | libssl3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
 
-The documented remediation upgraded Alpine packages in the frontend
-image build. The earlier record states that the backend had no
-critical findings and both image scans subsequently passed.
+**Reported action:** Upgrade Alpine packages in the frontend image build.
+
+The historical record reports passing image scans afterward, with no critical
+backend findings under that scan's policy.
 
 Historical evidence:
 [PR #37 checks](https://github.com/Jongkuch1/AgroCompare/pull/37/checks).
 
-The table preserves the earlier record. Verify package versions and
-advisory identifiers against the original logs before final submission.
+Retain the original logs supporting the table.
 
-### Current scanner configuration
+#### Current Scanner
 
-PR #44 changed scanning to the official
-`aquasec/trivy:0.58.0` container image.
+PR #44 changed scanning to the official `aquasec/trivy:0.58.0` container.
 
-Historical change:
-[PR #44](https://github.com/Jongkuch1/sokowatch/pull/44).
+Trivy runs twice per image:
 
-The reviewed workflow builds and scans both application images:
+1. Informational HIGH and CRITICAL report.
+2. Failure gate for CRITICAL findings with available fixes.
 
-- An informational step reports HIGH and CRITICAL findings.
-- A blocking step fails on CRITICAL findings.
-- Both steps use `--ignore-unfixed`.
+Both steps exclude unfixed vulnerabilities.
 
-Consequently, the report and failure gate exclude unfixed
-vulnerabilities. A passing result does not mean that no critical
-vulnerabilities exist.
+#### Final Summative Results
 
-This policy needs review against the assignment requirement to fail
-the build when critical vulnerabilities are detected.
+Complete this section from actual scan output.
 
-### Evidence still required
+| Evidence | Backend | Frontend |
+| --- | --- | --- |
+| Run URL | Pending | Pending |
+| Source commit/image identifier | Pending | Pending |
+| Scan date | Pending | Pending |
+| HIGH findings | Pending | Pending |
+| CRITICAL findings | Pending | Pending |
+| Remediation or risk decision | Pending | Pending |
 
-For the final image scan record, capture:
+If no findings are reported, record that result with the scan policy and
+run link. Do not infer zero findings from a green workflow alone.
 
-- Workflow run URL and source commit.
-- Backend and frontend image identifiers.
-- Scanner version and scan date.
-- Actual HIGH and CRITICAL findings.
-- Remediation or a documented decision for each finding.
-- Findings excluded by the current scan policy.
+## Secret Scanning
 
-Latest scan results have not been verified in this documentation review.
+Gitleaks is included in the security workflow.
 
-## 4. Secret Scanning
-
-The security workflow uses Gitleaks and checks out the full Git history.
-It runs on pull requests, pushes to `main`, a weekly schedule and
-manual requests.
-
-The earlier project record reports that this local command found
-no secrets:
+The previous record reports no detected secrets from a local full-history run:
 
 ```bash
 gitleaks detect --source . --log-opts="--all"
 ```
 
-That result means no secrets were detected by that run and its rules.
-It does not guarantee that every possible credential was absent.
+This is a scanner result, not a guarantee that all possible secrets are absent.
 
-Ignore rules help prevent Terraform variable and state files from
-being added accidentally. They do not remove files already tracked
-or secrets previously committed.
+Ignore rules help prevent accidental commits of variable and state files.
+They do not remove files already tracked or credentials previously committed.
 
-Never commit:
+Protect:
 
-- Private SSH keys.
-- Cloud credentials or registry tokens.
+- Cloud credentials and deployment tokens.
+- SSH private keys.
+- Registry credentials.
 - Database passwords.
-- Terraform variable files containing credentials.
-- Terraform state or saved plans containing sensitive data.
+- Terraform state, backups and sensitive plans.
 
-Terraform generates the database password and stores it in state.
-Marking an output `sensitive` hides normal display; it does not remove
-the secret from state. Protect state access and any backups.
+Terraform-generated passwords remain stored in state even when their
+outputs are marked sensitive.
 
-## 5. Current Automated Scans
+## Infrastructure Security Controls
 
-Configuration reviewed from `origin/main` at commit `c6cd746`.
+The following combines the team's architecture and intended deployment
+controls. Verify deployed behavior and the final workflow before submission.
 
-| Scan | Tool | Current failure condition |
+| Control | Description |
+| --- | --- |
+| Private application VM | No public application VM IP; administrative access goes through the bastion |
+| Bastion | Administrator SSH access constrained by the configured source range |
+| Load balancer | Public web entry point with an HTTP health probe |
+| Database | Public network access disabled; delegated subnet and private DNS |
+| Registry | Authentication required and shared administrator account disabled |
+| Server hardening | Ansible roles cover firewall and SSH hardening; verify individual settings against the final roles |
+| Deployment access | Planned temporary runner SSH rule, removed after deployment |
+| Deployment gates | Planned dependency, image and IaC checks before publication and deployment |
+| Container privileges | Backend non-root execution and frontend privilege decisions documented by the team |
+| Credentials | Intended use of protected secrets and scoped deployment identities |
+
+### Important Scope Details
+
+- ACR's endpoint is public even though registry contents require authentication.
+- Database NSG default rules permit other VNet traffic; an explicit app-subnet
+  allow rule does not establish exclusive app access.
+- The reviewed web entry point uses HTTP; HTTPS has not been demonstrated.
+- Registry pulls, temporary SSH rules and deployment gates must be confirmed
+  against the completed CD implementation.
+- Health responses do not prove database connectivity.
+
+## Accepted Risks and Review Points
+
+| Risk | Team rationale or context | Review point |
 | --- | --- | --- |
-| Python dependencies | pip-audit | Known vulnerabilities |
-| Production JavaScript dependencies | npm audit | High or critical findings |
-| Full JavaScript dependency audit | npm audit | Informational; step permits failure |
-| Secrets | Gitleaks | Detected leaks according to its rules |
-| Backend and frontend images | Trivy | Critical findings with an available fix |
-| Infrastructure as Code | Not integrated in the reviewed workflows | No automated gate verified |
-
-The security workflow has `contents: read` permissions.
-
-Scan configuration establishes intended behavior. Workflow run results
-must be checked separately.
-
-## 6. Infrastructure Security
-
-The following describes Terraform configuration, not verified deployed
-cloud state.
-
-### Network and application VM
-
-- The application VM is configured without a public IP.
-- A bastion host provides the intended SSH access path.
-- A public load balancer forwards HTTP traffic to the application port.
-- The load balancer probes `/api/health`.
-
-The reviewed public entry point uses HTTP. HTTPS termination has not
-been demonstrated in the reviewed configuration.
-
-### Container registry
-
-ACR is configured with:
-
-- Basic service tier.
-- Shared administrator account disabled.
-- A public network endpoint.
-
-Registry access requires authentication. The registry should not be
-described as having a private network endpoint.
-
-The reviewed Ansible role does not yet authenticate to ACR or pull
-published images. Registry permissions and deployment identities remain
-to be verified during integration.
-
-### Managed PostgreSQL
-
-PostgreSQL is configured with:
-
-- A delegated database subnet.
-- Private DNS.
-- Public network access disabled.
-- A generated administrator password.
-- Seven-day backup retention.
-
-The database NSG explicitly allows port 5432 from the application
-subnet. Default rules also allow other virtual-network traffic, so
-the configuration does not establish exclusive access from the app VM.
-
-The reviewed Compose configuration does not pass database connection
-settings to the backend. Application database use is not verified.
-
-### Declared scanner suppressions
-
-Terraform contains Checkov suppression comments for registry and
-database resources.
-
-Their stated reasons include Basic-tier cost constraints, unavailable
-Premium features, public registry connectivity for the runner, and
-using Trivy instead of paid image scanning.
-
-These comments are declared exceptions, not evidence that Checkov ran
-or that the exceptions were independently approved. Validate each check
-identifier, its applicability and its justification when IaC scanning
-is integrated.
-
-## 7. Deployment Limitations
-
-The reviewed repository does not contain a CD workflow.
-
-The current Ansible deployment role clones `main` and builds the
-application on the VM using Docker Compose.
-
-The dynamic inventory still expects `public_ip_address`, while the
-new Terraform configuration exposes `app_private_ip` and
-`bastion_public_ip`. Private VM targeting and SSH through the bastion
-require integration.
-
-The following are not yet verified:
-
-- Automated IaC scanning.
-- Enforcement of required security checks before merging.
-- Registry-based deployment through Ansible.
-- Deployment credentials and their permissions.
-- Successful cloud deployment.
-- Runtime health and public application availability.
-- The relationship between a deployed image and its source commit.
-
-## 8. Final Verification Checklist
-
-- [ ] Record current dependency and image scan run links and commits.
-- [ ] Confirm historical advisory identifiers against original logs.
-- [ ] Review excluded unfixed vulnerabilities.
-- [ ] Verify the critical-vulnerability gate meets the assignment.
-- [ ] Integrate IaC scanning and document actual results.
-- [ ] Review Terraform suppressions with the infrastructure owner.
-- [ ] Verify GitHub branch protection and required security checks.
-- [ ] Verify registry authentication and deployment permissions.
-- [ ] Confirm Ansible targets the private VM through the bastion.
-- [ ] Verify the public health endpoint and application features.
-- [ ] Update this document after integration without replacing
-      historical evidence with unsupported claims.
-
-## Related Documentation
-
-- [README.md](README.md)
-- [CHANGELOG.md](CHANGELOG.md)
-- [Demo checklist](docs/DEMO_CHECKLIST.md)# Security Findings and Limitations
-
-This document records reported security findings, remediation and the
-configuration reviewed for the Summative.
-
-Historical scan results apply to the commits scanned at that time.
-They do not establish the security of the latest images or deployment.
-
-## 1. Backend Dependencies
-
-The previous security record reports that the initial pip-audit run
-found 12 entries across three packages, representing six unique
-advisory IDs.
-
-PR #33 updated the affected dependencies:
-
-| Package | Before | After | Reported advisory IDs |
-| --- | --- | --- | --- |
-| Flask | 3.0.3 | 3.1.3 | PYSEC-2026-2151 |
-| Flask-CORS | 4.0.1 | 6.0.5 | PYSEC-2024-71, PYSEC-2026-1383, PYSEC-2026-1384, PYSEC-2026-1385 |
-| pytest | 8.3.3 | 9.2.0 | PYSEC-2026-1845 |
-
-The previous record states that Agertu's local audit reported no known
-vulnerabilities after these changes, all six backend tests passed,
-and the Python dependency scan passed in the observed PR run.
-
-Historical evidence:
-[PR #33 checks](https://github.com/Jongkuch1/AgroCompare/pull/33/checks).
-
-These package versions and advisory identifiers are retained from the
-earlier project record. Confirm them against the original scan logs
-when preparing the final evidence.
-
-## 2. Frontend Dependencies
-
-The previous full npm audit reported two findings: one moderate and
-one high. The recorded output identified esbuild advisory
-`GHSA-67mh-4wv8-2f99` in Vite's dependency tree. npm proposed a breaking
-Vite upgrade.
-
-Agertu's reported production-only audit, using `npm audit --omit=dev`,
-found zero vulnerabilities. The Node audit job passed in the observed
-PR run.
-
-The current workflow:
-
-- Fails on high or critical findings in production dependencies.
-- Runs a full dependency audit as an informational step.
-
-The production-only result does not establish that development
-dependency findings were fixed. Development dependencies execute
-during development and builds, so their findings still require review.
-
-## 3. Container Images
-
-### Historical findings and remediation
-
-The earlier project record states that both images built on PR #33,
-but Trivy installation failed before either image was scanned.
-
-PR #37 addressed a reported GitHub API rate-limit problem by supplying
-`GITHUB_TOKEN` to the Trivy action.
-
-Once scanning ran, the frontend image reportedly contained these
-three critical package findings:
-
-| Package | Installed | Fixed | Reported advisory |
-| --- | --- | --- | --- |
-| brotli-libs | 1.1.0-r2 | 1.1.1-r0 | CVE-2026-111497 |
-| libcrypto3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
-| libssl3 | 3.3.3-r0 | 3.3.7-r0 | CVE-2026-31789 |
-
-The documented remediation upgraded Alpine packages in the frontend
-image build. The earlier record states that the backend had no
-critical findings and both image scans subsequently passed.
-
-Historical evidence:
-[PR #37 checks](https://github.com/Jongkuch1/AgroCompare/pull/37/checks).
-
-The table preserves the earlier record. Verify package versions and
-advisory identifiers against the original logs before final submission.
-
-### Current scanner configuration
-
-PR #44 changed scanning to the official
-`aquasec/trivy:0.58.0` container image.
-
-Historical change:
-[PR #44](https://github.com/Jongkuch1/sokowatch/pull/44).
-
-The reviewed workflow builds and scans both application images:
-
-- An informational step reports HIGH and CRITICAL findings.
-- A blocking step fails on CRITICAL findings.
-- Both steps use `--ignore-unfixed`.
-
-Consequently, the report and failure gate exclude unfixed
-vulnerabilities. A passing result does not mean that no critical
-vulnerabilities exist.
-
-This policy needs review against the assignment requirement to fail
-the build when critical vulnerabilities are detected.
-
-### Evidence still required
-
-For the final image scan record, capture:
-
-- Workflow run URL and source commit.
-- Backend and frontend image identifiers.
-- Scanner version and scan date.
-- Actual HIGH and CRITICAL findings.
-- Remediation or a documented decision for each finding.
-- Findings excluded by the current scan policy.
-
-Latest scan results have not been verified in this documentation review.
-
-## 4. Secret Scanning
-
-The security workflow uses Gitleaks and checks out the full Git history.
-It runs on pull requests, pushes to `main`, a weekly schedule and
-manual requests.
-
-The earlier project record reports that this local command found
-no secrets:
-
-```bash
-gitleaks detect --source . --log-opts="--all"
-```
-
-That result means no secrets were detected by that run and its rules.
-It does not guarantee that every possible credential was absent.
-
-Ignore rules help prevent Terraform variable and state files from
-being added accidentally. They do not remove files already tracked
-or secrets previously committed.
-
-Never commit:
-
-- Private SSH keys.
-- Cloud credentials or registry tokens.
-- Database passwords.
-- Terraform variable files containing credentials.
-- Terraform state or saved plans containing sensitive data.
-
-Terraform generates the database password and stores it in state.
-Marking an output `sensitive` hides normal display; it does not remove
-the secret from state. Protect state access and any backups.
-
-## 5. Current Automated Scans
-
-Configuration reviewed from `origin/main` at commit `c6cd746`.
-
-| Scan | Tool | Current failure condition |
-| --- | --- | --- |
-| Python dependencies | pip-audit | Known vulnerabilities |
-| Production JavaScript dependencies | npm audit | High or critical findings |
-| Full JavaScript dependency audit | npm audit | Informational; step permits failure |
-| Secrets | Gitleaks | Detected leaks according to its rules |
-| Backend and frontend images | Trivy | Critical findings with an available fix |
-| Infrastructure as Code | Not integrated in the reviewed workflows | No automated gate verified |
-
-The security workflow has `contents: read` permissions.
-
-Scan configuration establishes intended behavior. Workflow run results
-must be checked separately.
-
-## 6. Infrastructure Security
-
-The following describes Terraform configuration, not verified deployed
-cloud state.
-
-### Network and application VM
-
-- The application VM is configured without a public IP.
-- A bastion host provides the intended SSH access path.
-- A public load balancer forwards HTTP traffic to the application port.
-- The load balancer probes `/api/health`.
-
-The reviewed public entry point uses HTTP. HTTPS termination has not
-been demonstrated in the reviewed configuration.
-
-### Container registry
-
-ACR is configured with:
-
-- Basic service tier.
-- Shared administrator account disabled.
-- A public network endpoint.
-
-Registry access requires authentication. The registry should not be
-described as having a private network endpoint.
-
-The reviewed Ansible role does not yet authenticate to ACR or pull
-published images. Registry permissions and deployment identities remain
-to be verified during integration.
-
-### Managed PostgreSQL
-
-PostgreSQL is configured with:
-
-- A delegated database subnet.
-- Private DNS.
-- Public network access disabled.
-- A generated administrator password.
-- Seven-day backup retention.
-
-The database NSG explicitly allows port 5432 from the application
-subnet. Default rules also allow other virtual-network traffic, so
-the configuration does not establish exclusive access from the app VM.
-
-The reviewed Compose configuration does not pass database connection
-settings to the backend. Application database use is not verified.
-
-### Declared scanner suppressions
-
-Terraform contains Checkov suppression comments for registry and
-database resources.
-
-Their stated reasons include Basic-tier cost constraints, unavailable
-Premium features, public registry connectivity for the runner, and
-using Trivy instead of paid image scanning.
-
-These comments are declared exceptions, not evidence that Checkov ran
-or that the exceptions were independently approved. Validate each check
-identifier, its applicability and its justification when IaC scanning
-is integrated.
-
-## 7. Deployment Limitations
-
-The reviewed repository does not contain a CD workflow.
-
-The current Ansible deployment role clones `main` and builds the
-application on the VM using Docker Compose.
-
-The dynamic inventory still expects `public_ip_address`, while the
-new Terraform configuration exposes `app_private_ip` and
-`bastion_public_ip`. Private VM targeting and SSH through the bastion
-require integration.
-
-The following are not yet verified:
-
-- Automated IaC scanning.
-- Enforcement of required security checks before merging.
-- Registry-based deployment through Ansible.
-- Deployment credentials and their permissions.
-- Successful cloud deployment.
-- Runtime health and public application availability.
-- The relationship between a deployed image and its source commit.
-
-## 8. Final Verification Checklist
-
-- [ ] Record current dependency and image scan run links and commits.
-- [ ] Confirm historical advisory identifiers against original logs.
-- [ ] Review excluded unfixed vulnerabilities.
-- [ ] Verify the critical-vulnerability gate meets the assignment.
-- [ ] Integrate IaC scanning and document actual results.
-- [ ] Review Terraform suppressions with the infrastructure owner.
-- [ ] Verify GitHub branch protection and required security checks.
-- [ ] Verify registry authentication and deployment permissions.
-- [ ] Confirm Ansible targets the private VM through the bastion.
-- [ ] Verify the public health endpoint and application features.
-- [ ] Update this document after integration without replacing
-      historical evidence with unsupported claims.
-
-## Related Documentation
+| Development-tool advisories | Separate breaking upgrade requires testing | Next frontend upgrade |
+| Public bastion and load balancer | Required administrative and web entry points | Periodic network review |
+| Basic-tier ACR limitations | Course cost constraints | Before real production traffic |
+| Public registry endpoint | Authenticated access supports runner connectivity | Before stronger network isolation is required |
+| No geo-redundant database backup | Demo cost constraints | Before storing valuable data |
+| Nginx master privileges | Official image behavior | Consider an unprivileged image |
+| Local HTTP probes | Checks stay on the server | Reassess if the request path changes |
+| Public HTTP | Current demonstration entry point | Before handling sensitive production traffic |
+| Unfixed vulnerabilities excluded by Trivy | Current scan configuration | Before final security gate approval |
+
+A suppression comment records a decision; it does not prove that a scanner
+ran or that the underlying risk disappeared.
+
+## Final Evidence Checklist
+
+- [ ] Attach current dependency and image scan runs.
+- [ ] Complete the backend/frontend Trivy results.
+- [ ] Attach the colleague's historical Checkov evidence.
+- [ ] Scan the final infrastructure and review suppressions.
+- [ ] Verify the critical-vulnerability gate.
+- [ ] Verify required security checks in branch protection.
+- [ ] Verify registry permissions and deployment credentials.
+- [ ] Verify bastion access and temporary rule cleanup.
+- [ ] Record a successful CD run and deployed revision.
+- [ ] Verify public health and application functionality.
+
+## Related Documents
 
 - [README.md](README.md)
 - [CHANGELOG.md](CHANGELOG.md)
