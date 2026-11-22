@@ -4,10 +4,6 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Upgrade existing packages
-  ansible.builtin.apt:
-    upgrade: safe
-
 - name: Install prerequisite packages
   ansible.builtin.apt:
     name:
@@ -15,6 +11,7 @@
       - ufw
       - ca-certificates
       - curl
+      - python3-docker
     state: present
 
 - name: Install Docker Engine and the Compose plugin
