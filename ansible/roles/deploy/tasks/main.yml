@@ -1,14 +1,24 @@
 ---
-- name: Clone or update the application repository
-  ansible.builtin.git:
-    repo: "{{ repo_url }}"
-    dest: "{{ app_dir }}"
-    version: "{{ repo_branch }}"
-    force: true
-  register: app_checkout
+- name: Ensure the application directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: "0755"
 
-- name: Build and start the application with Docker Compose
+- name: Log in to the Azure Container Registry
+  community.docker.docker_login:
+    registry_url: "{{ acr_login_server }}"
+    username: "{{ acr_username }}"
+    password: "{{ acr_password }}"
+
+- name: Render the production Compose file for the current image tag
+  ansible.builtin.template:
+    src: docker-compose.prod.yml.j2
+    dest: "{{ app_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Pull and start the application containers
   community.docker.docker_compose_v2:
     project_src: "{{ app_dir }}"
-    build: "{{ 'always' if app_checkout.changed else 'policy' }}"
+    pull: always
     state: present
