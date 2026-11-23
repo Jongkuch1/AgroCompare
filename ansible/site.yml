@@ -5,8 +5,7 @@
 
   vars:
     app_dir: /opt/agrocompare
-    repo_url: https://github.com/Jongkuch1/AgroCompare.git
-    repo_branch: main
+    app_port: 8080
 
   roles:
     - docker

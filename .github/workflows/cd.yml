@@ -1,0 +1,214 @@
+# Owner: Jongkuch1 (Summative Part 1: network, bastion, private VM, load balancer)
+name: CD - Deploy to production
+
+# Runs ONLY when something is merged (pushed) to main, or by hand.
+# Stages: CI checks -> build, scan and push images -> deploy with Ansible.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Never run two deployments at the same time
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------- 1. The same checks as the CI pipeline ----------
+  frontend-tests:
+    name: Lint and test (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  backend-tests:
+    name: Lint and test (backend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pip install flake8
+      - run: flake8 .
+      - run: pytest -q
+
+  dependency-scan:
+    name: Dependency scan (pip-audit, npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pip-audit==2.10.1
+      - name: Python dependencies (fails on any known vulnerability)
+        run: pip-audit -r backend/requirements.txt --progress-spinner off
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Node production dependencies (fails on high or critical)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  iac-scan:
+    name: IaC scan (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install checkov==3.4.3
+      - name: Scan Terraform, Ansible, Dockerfiles and workflows
+        # Same accepted risks as iac-scan.yml (explained in SECURITY.md)
+        run: >-
+          checkov -d .
+          --framework terraform ansible dockerfile github_actions
+          --skip-check CKV_DOCKER_3,CKV2_ANSIBLE_1
+          --skip-path node_modules
+          --compact --quiet
+
+  # ---------- 2. Build, scan, then push the images ----------
+  build-scan-push:
+    name: Build, scan (Trivy) and push images
+    needs: [frontend-tests, backend-tests, dependency-scan, iac-scan]
+    runs-on: ubuntu-latest
+    env:
+      ACR_NAME: ${{ vars.ACR_NAME }}
+      TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to the private registry
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Build the images
+        run: |
+          docker build -t "$ACR_NAME.azurecr.io/agrocompare-backend:$TAG" -f Dockerfile .
+          docker build -t "$ACR_NAME.azurecr.io/agrocompare-frontend:$TAG" -f frontend/Dockerfile ./frontend
+
+      - name: Scan the images (fails on CRITICAL findings that have a fix)
+        # Trivy runs from its official image, so no third-party action is needed.
+        run: |
+          for name in backend frontend; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy:0.58.0 image \
+              --severity CRITICAL --ignore-unfixed --exit-code 1 \
+              "$ACR_NAME.azurecr.io/agrocompare-$name:$TAG"
+          done
+
+      - name: Push the images (only reached when the scan passed)
+        run: |
+          docker push "$ACR_NAME.azurecr.io/agrocompare-backend:$TAG"
+          docker push "$ACR_NAME.azurecr.io/agrocompare-frontend:$TAG"
+
+  # ---------- 3. Deploy with Ansible through the bastion ----------
+  deploy:
+    name: Deploy with Ansible
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      NSG: ${{ vars.BASTION_NSG_NAME }}
+      ACR_LOGIN_SERVER: ${{ vars.ACR_NAME }}.azurecr.io
+      IMAGE_TAG: ${{ github.sha }}
+      BASTION_IP: ${{ vars.BASTION_IP }}
+      APP_PRIVATE_IP: ${{ vars.APP_PRIVATE_IP }}
+      DB_HOST: ${{ vars.DB_HOST }}
+      SSH_KEY_FILE: ${{ github.workspace }}/.deploy_key
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Ansible and its collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Prepare the SSH key and registry login
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
+          # The service principal doubles as the registry login
+          ACR_USERNAME=$(echo "$AZURE_CREDENTIALS" | jq -r .clientId)
+          ACR_PASSWORD=$(echo "$AZURE_CREDENTIALS" | jq -r .clientSecret)
+          echo "::add-mask::$ACR_USERNAME"
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "ACR_USERNAME=$ACR_USERNAME" >> "$GITHUB_ENV"
+          echo "ACR_PASSWORD=$ACR_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Let this runner reach the bastion over SSH (temporary rule)
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          az network nsg rule create \
+            --resource-group "$RG" --nsg-name "$NSG" \
+            --name allow-ssh-github-runner --priority 120 \
+            --access Allow --direction Inbound --protocol Tcp \
+            --destination-port-ranges 22 \
+            --source-address-prefixes "$RUNNER_IP/32"
+          sleep 20
+
+      - name: Run the Ansible playbook
+        working-directory: ansible
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          umask 077
+          jq -n \
+            --arg acr_login_server "$ACR_LOGIN_SERVER" \
+            --arg acr_username "$ACR_USERNAME" \
+            --arg acr_password "$ACR_PASSWORD" \
+            --arg image_tag "$IMAGE_TAG" \
+            --arg db_password "$DB_PASSWORD" \
+            '{acr_login_server:$acr_login_server, acr_username:$acr_username, acr_password:$acr_password, image_tag:$image_tag, db_password:$db_password}' \
+            > deploy_vars.json
+          ansible-playbook site.yml --extra-vars @deploy_vars.json
+          rm -f deploy_vars.json
+
+      - name: Remove the temporary SSH rule
+        if: always()
+        run: |
+          az network nsg rule delete \
+            --resource-group "$RG" --nsg-name "$NSG" \
+            --name allow-ssh-github-runner
+
+      - name: Smoke test the live site
+        run: |
+          for i in $(seq 1 12); do
+            if curl -fsS "http://${{ vars.LB_PUBLIC_IP }}/api/health"; then exit 0; fi
+            sleep 10
+          done
+          echo "The site did not answer on /api/health" >&2
+          exit 1
