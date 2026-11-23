@@ -58,6 +58,10 @@ resource "azurerm_lb_rule" "web" {
   frontend_ip_configuration_name = "public"
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.app.id]
   probe_id                       = azurerm_lb_probe.app.id
+  # Required once the same frontend IP also has an outbound rule (below):
+  # Azure won't let a load-balancing rule do its own SNAT when outbound
+  # rules already own that frontend's SNAT behavior.
+  disable_outbound_snat = true
 }
 
 # Explicit outbound path for the private app VM (apt, Docker, ACR pulls).
