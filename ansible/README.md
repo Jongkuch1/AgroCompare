@@ -51,9 +51,9 @@ ANSIBLE_SSH_PRIVATE_KEY_FILE=~/.ssh/your_key ansible-inventory -i inventory/dyna
 
 ```bash
 cd ansible
-ansible-playbook -i inventory/dynamic_inventory.py playbook.yml
+ansible-playbook -i inventory/dynamic_inventory.py site.yml
 # or, with the static file:
-ansible-playbook -i inventory/hosts.ini playbook.yml
+ansible-playbook -i inventory/hosts.ini site.yml
 ```
 
 First run takes a few minutes. Running it again is fine — every task,
@@ -71,7 +71,7 @@ curl http://<ip>:8080/api/health
 Syntax check only, doesn't touch the server:
 
 ```bash
-ansible-playbook -i inventory/dynamic_inventory.py playbook.yml --syntax-check
+ansible-playbook -i inventory/dynamic_inventory.py site.yml --syntax-check
 ```
 
 ## If something breaks
