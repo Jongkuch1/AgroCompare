@@ -4,39 +4,35 @@ This configures the Azure VM Terraform creates and deploys AgroCompare onto it.
 
 It's split into four roles, run in this order:
 - `docker` — installs Docker and the Compose plugin
-- `deploy` — clones this repo onto the server and runs `docker compose` to build/start the app
+- `deploy` — logs into the Azure Container Registry, renders the production Compose file, then pulls and starts the already-built, already-scanned images
 - `firewall` — turns on UFW, blocks everything by default, opens only SSH and the app port
 - `ssh_hardening` — turns off SSH password login and root login
 
 ## Before running it
 
 You need:
-- A VM already created (`terraform apply` in `../terraform`)
+- The infrastructure already created (`terraform apply` in `../terraform`) — the app VM has no public IP, it's reachable only through the bastion
 - Ansible installed (`pip install ansible-core`)
-- Two extra collections:
+- The required collections, from `requirements.yml`:
 
 ```bash
-ansible-galaxy collection install community.docker community.general
+ansible-galaxy collection install -r requirements.yml
 ```
 
-- SSH access to the VM
+- SSH access to the bastion (the VM itself is only reached by jumping through it)
+- `acr_login_server`, `acr_username`, `acr_password` and `image_tag` passed as extra vars (the CD pipeline does this for you; see `.github/workflows/cd.yml`)
 
 ## Setup
 
 There are two ways to tell Ansible where the VM is:
 
-**Static (`inventory/hosts.ini`)** — get the IP yourself and hardcode it:
+**Static (`inventory/hosts.example.ini`)** — copy it to `inventory/hosts.ini` and fill in the bastion/VM IPs yourself:
 
 ```bash
-cd ../terraform && terraform output public_ip_address
+cd ../terraform && terraform output bastion_public_ip && terraform output app_private_ip
 ```
 
-```ini
-[app]
-agrocompare-vm ansible_host=<ip here> ansible_user=azureuser ansible_ssh_private_key_file=~/.ssh/your_key
-```
-
-Make sure the key matches whichever public key you gave Terraform.
+The file already has the `ProxyCommand` set up so SSH jumps through the bastion to reach the private VM. Make sure the key matches whichever public key you gave Terraform.
 
 **Dynamic (`inventory/dynamic_inventory.py`)** — reads the IP straight out of
 Terraform's state instead, so it's always right even after the VM gets
@@ -61,11 +57,12 @@ including the Compose deploy, only reports "changed" when something
 actually changed (confirmed by running it twice back to back and comparing
 the `changed` count in the play recap).
 
-Confirm it worked:
+Confirm it worked (through the load balancer's public IP, not the private VM directly):
 
 ```bash
-curl http://<ip>:8080/
-curl http://<ip>:8080/api/health
+cd ../terraform && terraform output lb_public_ip
+curl http://<lb-ip>:8080/
+curl http://<lb-ip>:8080/api/health
 ```
 
 Syntax check only, doesn't touch the server:
@@ -76,7 +73,7 @@ ansible-playbook -i inventory/dynamic_inventory.py site.yml --syntax-check
 
 ## If something breaks
 
-Can't connect at all? Give the VM a minute after `terraform apply`, and check your IP is actually allowed in the NSG (`my_ip_cidr` / `team_ssh_cidrs` in terraform.tfvars).
+Can't connect at all? Give the VM a minute after `terraform apply`, and check your IP is actually allowed in the bastion's NSG (`my_ip_cidr` in terraform.tfvars).
 
 Permission denied on SSH? Wrong private key in the inventory file.
 
