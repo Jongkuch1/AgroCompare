@@ -4,233 +4,451 @@
 
 ## African Context
 
-Smallholder farmers across East Africa often don't know what their crops are selling for in nearby markets. Traders and middlemen usually have that information, so farmers can end up selling below the market price. AgroCompare puts crop prices from several markets in one place that anyone can check from a phone, so farmers can decide where and when to sell.
+Smallholder farmers across East Africa often lack information about crop prices in nearby markets. Traders and middlemen may have better access to that information, leaving farmers at a disadvantage.
+
+AgroCompare brings crop prices from several markets into one place, helping farmers compare markets and make informed selling decisions.
+
+**The application currently uses sample data for demonstration, not real market prices.**
 
 ## Team Members
 
-- Jongkuch Isaac Chol Anyar ([@Jongkuch1](https://github.com/Jongkuch1)) - Team Lead / DevOps
-- Agertu Diriba Aliko ([@AgertuDA](https://github.com/AgertuDA)) - Backend
-- Betelhem Feleke Cheleno ([@Betelhemf567](https://github.com/Betelhemf567)) - Frontend, Tests and CI
-- Beni Niyogisubizo ([@be-niy](https://github.com/be-niy)) - Project Board and Documentation
+- Jongkuch Isaac Chol Anyar ([@Jongkuch1](https://github.com/Jongkuch1)) — Team Lead / DevOps
+- Agertu Diriba Aliko ([@AgertuDA](https://github.com/AgertuDA)) — Backend
+- Betelhem Feleke Cheleno ([@Betelhemf567](https://github.com/Betelhemf567)) — Frontend, Tests and CI
+- Beni Niyogisubizo ([@be-niy](https://github.com/be-niy)) — Project Board and Documentation
 
 ## Project Overview
 
-AgroCompare is a simple web application that shows current prices for common crops across different markets in East Africa. A Flask backend API reads price data and returns it as JSON, and a React frontend displays the results in a table.
+AgroCompare is a web application for comparing agricultural prices across sample East African markets.
 
-Users can filter prices by crop or by market, and compare the same crop across markets to see where it sells for the most. The first version uses a sample JSON data file served by the API. Later versions will move to a real database and be containerized and deployed to the cloud.
+A Flask API reads bundled JSON data and returns it to a React frontend. Users can filter observations by product or market and compare the same product across markets.
 
-**Note:** the prices in this version are sample data for demonstration, not real market prices.
+The project combines planning and collaboration from F1, containerization and CI from F2, infrastructure and security work from F3, and the Summative Git-to-Production workflow.
 
 ## Target Users
 
-- Smallholder farmers deciding where to sell
-- Small traders comparing market prices
-- Agricultural extension officers advising farmers
+- Smallholder farmers deciding where to sell.
+- Small traders comparing market prices.
+- Agricultural extension officers advising farmers.
 
 ## Core Features
 
-- **View prices:** see prices for 5+ crops (maize, tomatoes, onions, teff, potatoes) from the backend API
-- **Filter by crop or market:** narrow the table to the crop or market you care about
-- **Compare markets:** see the same crop across markets (Sample Markets A-D)
-- **Last updated date:** each price shows when it was last updated
+- View sample prices for crops including maize, tomatoes, onions, teff and potatoes.
+- Filter observations by product or market.
+- Compare a product across two markets.
+- View the date associated with each observation.
+- Display bundled fallback data with a notice when the API is unavailable.
+
+A populated frontend does not by itself prove API connectivity. Check for the fallback-data notice during verification.
 
 ## Technology Stack
 
-- **Frontend**: React 18, JavaScript, Vite, plain CSS
-- **Backend**: Python, Flask, Flask-CORS
-- **Data**: JSON file served by the backend API for now (database planned)
-- **Other**: pytest (backend) and Node's built-in test runner (frontend) for tests, GitHub Actions for CI
+| Area | Technology |
+| --- | --- |
+| Frontend | React 18, JavaScript, Vite and CSS |
+| Backend | Python, Flask and Flask-CORS |
+| Application data | Bundled JSON |
+| Tests | pytest and Node's built-in test runner |
+| Containers | Docker and Docker Compose |
+| CI/CD | GitHub Actions |
+| Security | pip-audit, npm audit, Trivy, Gitleaks and Checkov |
+| Infrastructure | Terraform and Azure |
+| Configuration management | Ansible |
+| Cloud services | Azure VMs, Load Balancer, Container Registry and managed PostgreSQL |
+
+The cloud architecture and deployment workflow are described below. Verify the final integration and runtime evidence before submission.
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or newer (includes npm)
-- Python 3.9+
-- Git
+- Git.
+- Node.js 18 or newer, compatible with the frontend dependencies.
+- Python 3.11, matching backend CI.
+- npm.
 
-### Installation and running
+For a container-based setup, see **Run with Docker Compose**.
 
-1. Clone the repository
+### Clone the repository
+
 ```bash
-git clone https://github.com/Jongkuch1/AgroCompare.git
-cd AgroCompare
+git clone https://github.com/Jongkuch1/sokowatch.git
+cd sokowatch
 ```
 
-2. Start the backend (in one terminal)
+### Start the backend
+
+From the repository root:
+
 ```bash
 cd backend
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-python app.py       # serves the API at http://localhost:5000
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+python app.py
 ```
 
-3. Start the frontend (in another terminal)
+The API runs at `http://localhost:5000`.
+
+### Start the frontend
+
+In another terminal, from the repository root:
+
 ```bash
 cd frontend
 npm install
-npm run dev         # opens the app at http://localhost:5173, proxies /api to the backend
+npm run dev
 ```
 
-### Running the tests
+Open the URL printed by Vite, normally `http://localhost:5173`.
+
+The development server proxies `/api` requests to the backend.
+
+### Run tests
+
+Install dependencies first and activate the backend virtual environment.
+
+Run each command from the repository root:
 
 ```bash
-cd backend && pytest        # backend tests
-cd frontend && npm test     # frontend tests
+(cd backend && python -m pytest)
+(cd frontend && npm test)
 ```
 
 ### Usage
 
-Open the dev server URL in your browser to see the price listings table. Use the search box and market filter to narrow results, and the compare section to see a product's price side by side across two markets. If the backend isn't running, the app falls back to bundled sample data and shows a notice.
+Use the search and market filters to narrow observations. Use the comparison section to compare a product across two markets.
 
-You can also call the API directly while the backend is running:
+Inspect the API directly:
 
 ```bash
-curl http://localhost:5000/api/prices
-curl "http://localhost:5000/api/prices?product=maize"
-curl "http://localhost:5000/api/prices?market=m-a"
+curl -fsS http://localhost:5000/api/health
+curl -fsS http://localhost:5000/api/prices
+curl -fsS "http://localhost:5000/api/prices?product=maize"
+curl -fsS "http://localhost:5000/api/prices?market=m-a"
 ```
 
-`/api/prices` returns JSON with three lists: `products`, `markets` and `observations` (each observation has a product, a market, a price, a currency, a unit and a date). The `product` and `market` query parameters filter the observations.
+Expected health response:
 
-See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/README.md) for full details.
+```json
+{"status":"ok"}
+```
+
+`/api/prices` returns `products`, `markets` and `observations`. Each observation includes a product, market, price, currency, unit and date.
+
+See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/README.md).
 
 ## Project Structure
 
-```
-AgroCompare/
-├── frontend/     # React/Vite app: price table, filters, compare, tests
-├── backend/      # Flask API: serves products/markets/prices as JSON, pytest tests
-├── .github/      # CODEOWNERS and CI workflow
-├── README.md
-└── .gitignore
-```
+| Path | Purpose |
+| --- | --- |
+| `backend/` | Flask API, sample data and tests |
+| `frontend/` | React application, tests and frontend Dockerfile |
+| `Dockerfile` | Backend image |
+| `docker-compose.yml` | Frontend and backend services |
+| `.github/workflows/` | CI, security and deployment workflows |
+| `terraform/` | Azure infrastructure configuration |
+| `ansible/` | Playbook, inventory and roles |
+| `docs/DEMO_CHECKLIST.md` | Individual demo checklist |
+| `SECURITY.md` | Findings, decisions and security controls |
+| `CHANGELOG.md` | Evolution across assignments |
 
 ## Links
 
-- [GitHub Repository](https://github.com/Jongkuch1/AgroCompare)
-- [Project Board](https://github.com/users/Jongkuch1/projects/7) (Kanban: Backlog, In Progress, Done)
-- [Issues](https://github.com/Jongkuch1/AgroCompare/issues)
-- [Pull Requests](https://github.com/Jongkuch1/AgroCompare/pulls?q=is%3Apr)
-- [Backend README](backend/README.md)
-- [Frontend README](frontend/README.md)
+- [Repository](https://github.com/Jongkuch1/sokowatch)
+- [Project Board](https://github.com/users/Jongkuch1/projects/7)
+- [Issues](https://github.com/Jongkuch1/sokowatch/issues)
+- [Pull Requests](https://github.com/Jongkuch1/sokowatch/pulls)
 - [Team Participation Sheet](https://docs.google.com/spreadsheets/d/1apJFWX5-BIjBpPVhniaPmolSvizBKX4rTitMLN0pWt4/edit?gid=0#gid=0)
 
-## Branch Protection
+## Collaboration and Branch Protection
 
-The `main` branch is protected so that no code reaches it unreviewed:
-- Changes must go through a pull request, with at least 1 approving review.
-- New commits dismiss earlier approvals, so reviewers always see the final code.
-- The `frontend-tests` and `backend-tests` CI checks must pass, and branches must be up to date.
-- All review conversations must be resolved before merging.
-- The rules apply to administrators too, so nobody can bypass them.
+Changes are developed on branches and submitted through pull requests.
 
-Pull requests should include `Closes #N` so the matching issue closes automatically.
+The team's protection rules require reviewed changes, passing checks and resolved conversations before merging. Confirm the current rules in GitHub Settings when preparing the demonstration.
 
-## License
-
-MIT License
+Use `Closes #N` in a PR description when its merge should close an issue.
 
 ## Run with Docker Compose
 
 ### Prerequisites
 
-- Git
-- Docker Engine with Docker Compose, or Docker Desktop
-- On Windows with WSL, enable Docker Desktop integration for your Ubuntu distribution.
-- Ports 8080 and 5000 must be available.
+- Docker Engine with the Compose plugin, or Docker Desktop.
+- Ports 8080 and 5000 available.
+- On Windows with WSL, Docker Desktop integration enabled for Ubuntu.
 
-Docker installs the application dependencies inside the images, so local Python and Node.js installations are not required for this method.
+Local Python and Node.js installations are not required for this method.
 
 ### Build and start
 
-From the repository root, where `docker-compose.yml` is located:
+From the repository root:
 
 ```bash
 docker compose up --build -d
 ```
 
-The first build downloads the base images and installs dependencies. The frontend starts after the backend health check passes.
-
-Open:
+The frontend starts after the backend health check passes.
 
 - Frontend: http://localhost:8080
-- Backend health check: http://localhost:5000/api/health
-- Price API: http://localhost:5000/api/prices
+- Backend health: http://localhost:5000/api/health
+- Prices: http://localhost:5000/api/prices
 
-The frontend serves the built React application through Nginx. Requests to `/api/` are forwarded to the backend service over the shared Compose network.
+Nginx serves the built frontend and forwards `/api/` requests to the backend.
 
-### Check service status
-
-Run from the repository root:
+### Check status
 
 ```bash
 docker compose ps
-curl -f http://localhost:5000/api/health
-curl -f http://localhost:8080/api/health
+curl -fsS http://localhost:5000/api/health
+curl -fsS http://localhost:8080/api/health
 ```
 
-Both health requests should return `{"status":"ok"}`. The second request checks that the frontend can forward requests to the backend.
+Both health requests should return `{"status":"ok"}`.
 
-### View logs
+The second request checks the frontend proxy path. Only the backend currently has a Compose health check.
+
+### Logs
 
 ```bash
-docker compose logs --tail=100
+docker compose logs --tail=100 backend frontend
 docker compose logs -f backend frontend
 ```
 
-Press Ctrl+C to stop following logs. The containers continue running.
+Press Ctrl+C to stop following logs without stopping containers.
 
 ### Stop and rebuild
 
-Stop and remove the application's containers and Compose network:
-
 ```bash
 docker compose down
-```
-
-Rebuild and start again after changing application code or dependencies:
-
-```bash
 docker compose up --build -d
 ```
 
-The current application uses sample JSON data packaged in the backend image. It has no database or persistent data volume. Changes to the source dataset require rebuilding the backend image.
+The application currently reads sample JSON packaged in the backend image. Dataset changes require rebuilding that image.
 
 ### Troubleshooting
 
-- **Docker command unavailable in WSL:** enable the Ubuntu distribution under Docker Desktop → Settings → Resources → WSL Integration, then reopen the terminal.
-- **Cannot connect to the Docker daemon:** start Docker Desktop or the Docker Engine and check `docker info`.
-- **Port already allocated:** stop the application or container already using port 5000 or 8080, then retry.
-- **Backend unhealthy or frontend fails to start:** inspect `docker compose logs backend` and check `docker compose ps`.
-- **Page loads but API requests fail:** check both health URLs above and inspect `docker compose logs frontend backend`.
-- **Build fails:** read the first build error, check network access, and retry after correcting the cause.
+| Problem | Action |
+| --- | --- |
+| Docker unavailable in WSL | Enable Ubuntu under Docker Desktop's WSL Integration settings |
+| Docker daemon unavailable | Start Docker Desktop or Docker Engine and run `docker info` |
+| Port already allocated | Stop the conflicting process or container |
+| Backend unhealthy | Inspect `docker compose logs backend` |
+| Frontend fails to start | Check backend health and Compose status |
+| API requests fail | Test both health URLs and inspect frontend/backend logs |
+| Page shows fallback data | Verify the backend directly |
+| Build fails | Inspect the first error and check dependency downloads |
 
 ## Continuous Integration
 
-The workflow is defined in `.github/workflows/ci.yml`.
+Application CI is defined in `.github/workflows/ci.yml`.
 
-It runs on:
-
-- Pushes to every branch except `main`.
-- Pull requests targeting `main`.
-
-The workflow contains three jobs:
+It runs on pushes to branches other than `main` and pull requests targeting `main`.
 
 | Job | Checks |
 | --- | --- |
-| `frontend-tests` | Sets up Node.js 18, installs dependencies, runs frontend linting, runs tests, and builds the frontend |
-| `backend-tests` | Sets up Python 3.11, installs backend dependencies and Flake8, runs linting, and runs pytest |
-| `docker-build` | Builds the backend image from the root Dockerfile and the frontend image from `frontend/Dockerfile` |
+| `frontend-tests` | Dependency installation, lint, tests and frontend build |
+| `backend-tests` | Dependency installation, Flake8 and pytest |
+| `docker-build` | Backend and frontend image builds |
 
-Each job fails if one of its commands fails. The Docker job builds images for validation; the current workflow does not publish them to a registry or deploy the application.
+Security checks are described in [SECURITY.md](SECURITY.md).
 
-### Check a workflow run
+To inspect a run:
 
-1. Open the repository's **Actions** tab.
-2. Select the **CI** workflow.
-3. Open the run for your branch or pull request.
-4. Select a job and expand the failed step to inspect its logs.
-5. Correct the problem, commit the fix, and push to the same branch to trigger another run.
+1. Open GitHub Actions.
+2. Select the workflow and relevant commit.
+3. Open each job and inspect its steps.
+4. Correct failures and push the fix to the same branch.
 
-Pull requests display their CI results in the checks section. Required checks and review approvals must be satisfied before merging under the repository's branch protection rules.
+Required checks must be configured in GitHub branch protection to prevent merging when they fail.
+
+<!-- Owner: be-niy (Summative Part 4: README, architecture diagram, CHANGELOG, observability) -->
+
+## Production Deployment (Azure)
+
+This section documents the team's Summative deployment design. Final workflow integration, live URLs and runtime results must be verified before submission.
+
+**Live app:** Pending — replace with the verified Terraform `app_url`.
+
+**Health check:** Pending — the verified live URL followed by `/api/health`.
+
+### Architecture
+
+Solid connections show the infrastructure access paths. Dashed connections show the intended registry, database and CD integrations.
+
+```mermaid
+flowchart TD
+    user["User browser"] -->|HTTP 80| lb["Azure Load Balancer"]
+
+    subgraph vnet["Azure virtual network"]
+        subgraph public["Public subnet"]
+            bastion["Bastion host"]
+        end
+        subgraph private["Private subnet"]
+            vm["App VM: Nginx and Flask"]
+        end
+        subgraph database["Database subnet"]
+            db[("Managed PostgreSQL")]
+        end
+    end
+
+    lb -->|8080 by default| vm
+    bastion -->|SSH| vm
+    vm -.->|PostgreSQL integration| db
+    dev["Developer"] -->|Merge to main| gha["GitHub Actions CD"]
+    gha -.->|Push images| acr[("Azure Container Registry")]
+    acr -.->|Pull images| vm
+    gha -.->|Ansible through bastion| bastion
+```
+
+| Part | Purpose | Defined in |
+| --- | --- | --- |
+| Network | Public, private and database subnets with NSGs | `terraform/network.tf`, `terraform/database.tf` |
+| Bastion | SSH entry point | `terraform/bastion.tf` |
+| App VM | Private VM running the application | `terraform/compute.tf` |
+| Load balancer | Public web entry point and `/api/health` probe | `terraform/loadbalancer.tf` |
+| Registry | Authenticated Azure Container Registry | `terraform/registry.tf` |
+| Database | Managed PostgreSQL with public access disabled | `terraform/database.tf` |
+| Configuration | Docker installation, server configuration and deployment | `ansible/` |
+| Pipeline | CI, security checks and intended CD workflow | `.github/workflows/` |
+
+ACR has its shared administrator account disabled. Its network endpoint is public; image access requires authentication.
+
+The application still reads bundled JSON data. Verify database connection settings and application use separately from database provisioning.
+
+### How a Change Reaches Production
+
+The intended Git-to-Production sequence is:
+
+1. Open a pull request.
+2. Run lint, tests, dependency scans, Docker builds, image scans and IaC scans.
+3. Obtain the required review and merge to `main`.
+4. Run the CD checks, build both images and publish them to ACR.
+5. Authenticate to Azure and allow the deployment runner's SSH access as required.
+6. Run Ansible through the bastion to authenticate to ACR, pull images and restart the application.
+7. Remove any temporary SSH rule.
+8. Smoke-test the public `/api/health` endpoint and exercise the application.
+
+Confirm these stages against the final CD workflow and a successful run. The earlier reviewed deployment role builds from a Git checkout on the VM; registry deployment and private inventory integration must be confirmed in the final implementation.
+
+### Set Up from Scratch
+
+Prerequisites:
+
+- Terraform, Azure CLI and Git.
+- An Azure subscription.
+- An SSH key pair.
+- Ansible and the `community.docker` collection.
+
+From the repository root:
+
+```bash
+az login
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Fill in the required region, allowed administrator IP range and public key path.
+
+```bash
+terraform init
+terraform fmt -check
+terraform validate
+terraform plan
+```
+
+Review the plan and resource costs, then provision:
+
+```bash
+terraform apply
+```
+
+Protect Terraform state: it contains the generated database password. Do not commit state, private keys, credentials or sensitive variable files.
+
+### Deployment Settings
+
+The colleague-provided deployment plan uses the following settings. Confirm the names against the final workflow before configuring them.
+
+Run Terraform output commands from `terraform/`.
+
+| Kind | Name | Source |
+| --- | --- | --- |
+| Variable | `ACR_NAME` | `terraform output -raw registry_name` |
+| Variable | `AZURE_RESOURCE_GROUP` | `terraform output -raw resource_group_name` |
+| Variable | `BASTION_NSG_NAME` | `terraform output -raw bastion_nsg_name` |
+| Variable | `BASTION_IP` | `terraform output -raw bastion_public_ip` |
+| Variable | `APP_PRIVATE_IP` | `terraform output -raw app_private_ip` |
+| Variable | `LB_PUBLIC_IP` | `terraform output -raw lb_public_ip` |
+| Variable | `DB_HOST` | `terraform output -raw db_host` |
+| Secret | `DB_PASSWORD` | Generated database password |
+| Secret | `SSH_PRIVATE_KEY` | Deployment private key |
+| Secret | `AZURE_CREDENTIALS` | Credentials for the deployment identity, if used by the final workflow |
+
+Use the cloud authentication method and permissions required by the final workflow. Never display secret values in the demo.
+
+Retrieve the intended public URL after provisioning:
+
+```bash
+terraform output -raw app_url
+```
+
+An output URL alone does not establish that deployment succeeded.
+
+### Observability
+
+Run these checks after deployment and record the actual results.
+
+| Signal | How to inspect it | What it tells an operator |
+| --- | --- | --- |
+| Public health | `curl -fsS http://<live-ip>/api/health` | The public request reaches the backend through the HTTP proxy path |
+| Load balancer probe | Inspect backend/probe health in Azure | The VM responds to the configured HTTP probe |
+| Backend health | `docker compose ps` | The backend's internal health check passes |
+| Logs | `docker compose logs --tail=100 backend frontend` | Recent requests, output and errors emitted by the services |
+| Application use | Exercise filtering and comparison | User-facing features work; check for fallback notices |
+| Deployment run | Inspect the completed CD run | Which deployment stages passed; confirm the deployed revision separately |
+
+The health endpoint does not establish database connectivity or verify every application feature.
+
+Access the private VM through the bastion using the configured account and SSH key:
+
+```bash
+ssh -J <admin-user>@<bastion-ip> <admin-user>@<app-private-ip>
+```
+
+On the VM:
+
+```bash
+cd /opt/agrocompare
+sudo docker compose ps
+sudo docker compose logs --tail=100 backend frontend
+curl -fsS http://localhost:8080/api/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+Only the backend has a Compose health check. Adjust the localhost URL if the application port changes.
+
+### Teardown
+
+Coordinate teardown with the team and assessment requirements. Keep the submitted application available for the agreed review period.
+
+When the environment is no longer required, run from `terraform/`:
+
+```bash
+terraform destroy
+```
+
+Review before confirming. This removes managed resources, including the database.
+
+## Security, History and Demo
+
+- [Security findings](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+- [Demo checklist](docs/DEMO_CHECKLIST.md)
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
