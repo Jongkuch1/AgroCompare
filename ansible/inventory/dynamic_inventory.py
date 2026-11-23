@@ -6,7 +6,7 @@ is recreated, this asks Terraform what it actually deployed and builds the
 inventory from that. Run it directly to see the JSON, or point Ansible at
 it with -i:
 
-    ansible-playbook -i inventory/dynamic_inventory.py playbook.yml
+    ansible-playbook -i inventory/dynamic_inventory.py site.yml
 
 Needs a Terraform state to read, so ../terraform must already be applied.
 """
@@ -37,8 +37,9 @@ def terraform_outputs():
 
 def build_inventory():
     outputs = terraform_outputs()
-    host_ip = outputs.get("public_ip_address")
-    if not host_ip:
+    bastion_ip = outputs.get("bastion_public_ip")
+    app_ip = outputs.get("app_private_ip")
+    if not bastion_ip or not app_ip:
         # No deployed infrastructure yet: an empty inventory, not an error,
         # so `ansible-inventory --list` still works before the first apply.
         return {"_meta": {"hostvars": {}}}
@@ -46,15 +47,22 @@ def build_inventory():
     admin_user = outputs.get("admin_username", "azureuser")
     hostname = "agrocompare-vm"
     ssh_key = os.environ.get("ANSIBLE_SSH_PRIVATE_KEY_FILE", "~/.ssh/alu-devops")
+    proxy_command = (
+        f'ssh -i {ssh_key} -o StrictHostKeyChecking=accept-new '
+        f'-W %h:%p {admin_user}@{bastion_ip}'
+    )
 
     return {
         "app": {"hosts": [hostname]},
         "_meta": {
             "hostvars": {
                 hostname: {
-                    "ansible_host": host_ip,
+                    "ansible_host": app_ip,
                     "ansible_user": admin_user,
                     "ansible_ssh_private_key_file": ssh_key,
+                    "ansible_ssh_common_args": (
+                        f'-o StrictHostKeyChecking=accept-new -o ProxyCommand="{proxy_command}"'
+                    ),
                 }
             }
         },
