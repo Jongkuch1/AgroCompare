@@ -126,6 +126,13 @@ resource "azurerm_postgresql_flexible_server" "main" {
   tags = local.common_tags
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.db]
+
+  lifecycle {
+    # Azure auto-assigns an availability zone on creation since none is set
+    # here. Without this, every later plan tries to "change" it back to
+    # null, which the API rejects outside of a high-availability swap.
+    ignore_changes = [zone]
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "app" {
