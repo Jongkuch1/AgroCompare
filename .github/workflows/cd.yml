@@ -173,13 +173,25 @@ jobs:
       - name: Let this runner reach the bastion over SSH (temporary rule)
         run: |
           RUNNER_IP=$(curl -s https://api.ipify.org)
+          echo "Runner IP: $RUNNER_IP"
           az network nsg rule create \
             --resource-group "$RG" --nsg-name "$NSG" \
             --name allow-ssh-github-runner --priority 120 \
             --access Allow --direction Inbound --protocol Tcp \
             --destination-port-ranges 22 \
             --source-address-prefixes "$RUNNER_IP/32"
-          sleep 20
+          sleep 30
+
+      - name: Diagnose SSH path to bastion and app VM
+        run: |
+          chmod 600 "$SSH_KEY_FILE"
+          echo "--- direct to bastion ---"
+          ssh -vvv -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+            azureuser@"$BASTION_IP" "echo bastion-ok" 2>&1 | tail -60
+          echo "--- jump to app VM ---"
+          ssh -vvv -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+            -o ProxyCommand="ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=accept-new -W %h:%p azureuser@$BASTION_IP" \
+            azureuser@"$APP_PRIVATE_IP" "echo app-vm-ok" 2>&1 | tail -60
 
       - name: Run the Ansible playbook
         working-directory: ansible
