@@ -265,15 +265,15 @@ Required checks must be configured in GitHub branch protection to prevent mergin
 
 ## Production Deployment (Azure)
 
-This section documents the team's Summative deployment design. Final workflow integration, live URLs and runtime results must be verified before submission.
+This section documents the team's Summative deployment design.
 
-**Live app:** Pending — replace with the verified Terraform `app_url`.
+**Live app:** http://172.198.71.15
 
-**Health check:** Pending — the verified live URL followed by `/api/health`.
+**Health check:** http://172.198.71.15/api/health
 
 ### Architecture
 
-Solid connections show the infrastructure access paths. Dashed connections show the intended registry, database and CD integrations.
+Solid connections show the infrastructure access paths and the CD pipeline's registry and deployment integrations. The dashed connection to the database shows it is provisioned but not yet used by the application.
 
 ```mermaid
 flowchart TD
@@ -295,9 +295,9 @@ flowchart TD
     bastion -->|SSH| vm
     vm -.->|PostgreSQL integration| db
     dev["Developer"] -->|Merge to main| gha["GitHub Actions CD"]
-    gha -.->|Push images| acr[("Azure Container Registry")]
-    acr -.->|Pull images| vm
-    gha -.->|Ansible through bastion| bastion
+    gha -->|Push images| acr[("Azure Container Registry")]
+    acr -->|Pull images| vm
+    gha -->|Ansible through bastion| bastion
 ```
 
 | Part | Purpose | Defined in |
@@ -309,7 +309,7 @@ flowchart TD
 | Registry | Authenticated Azure Container Registry | `terraform/registry.tf` |
 | Database | Managed PostgreSQL with public access disabled | `terraform/database.tf` |
 | Configuration | Docker installation, server configuration and deployment | `ansible/` |
-| Pipeline | CI, security checks and intended CD workflow | `.github/workflows/` |
+| Pipeline | CI, security checks and CD workflow | `.github/workflows/` |
 
 ACR has its shared administrator account disabled. Its network endpoint is public; image access requires authentication.
 
@@ -317,7 +317,7 @@ The application still reads bundled JSON data. Verify database connection settin
 
 ### How a Change Reaches Production
 
-The intended Git-to-Production sequence is:
+The Git-to-Production sequence is:
 
 1. Open a pull request.
 2. Run lint, tests, dependency scans, Docker builds, image scans and IaC scans.
@@ -328,7 +328,7 @@ The intended Git-to-Production sequence is:
 7. Remove any temporary SSH rule.
 8. Smoke-test the public `/api/health` endpoint and exercise the application.
 
-Confirm these stages against the final CD workflow and a successful run. The earlier reviewed deployment role builds from a Git checkout on the VM; registry deployment and private inventory integration must be confirmed in the final implementation.
+The deploy role pulls the scanned, already-built images from the private registry instead of building from source, and the Ansible inventory is built from Terraform outputs for local runs or from repository variables when running in CI.
 
 ### Set Up from Scratch
 
