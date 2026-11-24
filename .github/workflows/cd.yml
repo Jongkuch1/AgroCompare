@@ -141,6 +141,7 @@ jobs:
       APP_PRIVATE_IP: ${{ vars.APP_PRIVATE_IP }}
       DB_HOST: ${{ vars.DB_HOST }}
       SSH_KEY_FILE: ${{ github.workspace }}/.deploy_key
+      ANSIBLE_SSH_PRIVATE_KEY_FILE: ${{ github.workspace }}/.deploy_key
     steps:
       - uses: actions/checkout@v4
 

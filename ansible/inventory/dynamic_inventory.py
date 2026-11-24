@@ -36,15 +36,25 @@ def terraform_outputs():
 
 
 def build_inventory():
-    outputs = terraform_outputs()
-    bastion_ip = outputs.get("bastion_public_ip")
-    app_ip = outputs.get("app_private_ip")
+    # CI has no access to the local Terraform state, so the CD pipeline
+    # exports these as repository variables instead. Prefer them, and
+    # fall back to `terraform output` for local/manual runs.
+    bastion_ip = os.environ.get("BASTION_IP")
+    app_ip = os.environ.get("APP_PRIVATE_IP")
+    admin_user = os.environ.get("ADMIN_USERNAME")
+
+    if not bastion_ip or not app_ip:
+        outputs = terraform_outputs()
+        bastion_ip = bastion_ip or outputs.get("bastion_public_ip")
+        app_ip = app_ip or outputs.get("app_private_ip")
+        admin_user = admin_user or outputs.get("admin_username", "azureuser")
+
     if not bastion_ip or not app_ip:
         # No deployed infrastructure yet: an empty inventory, not an error,
         # so `ansible-inventory --list` still works before the first apply.
         return {"_meta": {"hostvars": {}}}
 
-    admin_user = outputs.get("admin_username", "azureuser")
+    admin_user = admin_user or "azureuser"
     hostname = "agrocompare-vm"
     ssh_key = os.environ.get("ANSIBLE_SSH_PRIVATE_KEY_FILE", "~/.ssh/alu-devops")
     proxy_command = (
