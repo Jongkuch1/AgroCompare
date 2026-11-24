@@ -161,7 +161,11 @@ jobs:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           umask 077
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
+          # Stored as base64: a raw multi-line PEM pasted into a GitHub
+          # secret is prone to silent newline/whitespace corruption, which
+          # OpenSSH rejects with "error in libcrypto". Base64 collapses it
+          # to one line that survives copy-paste intact.
+          printf '%s' "$SSH_PRIVATE_KEY" | base64 -d > "$SSH_KEY_FILE"
           # The service principal doubles as the registry login
           ACR_USERNAME=$(echo "$AZURE_CREDENTIALS" | jq -r .clientId)
           ACR_PASSWORD=$(echo "$AZURE_CREDENTIALS" | jq -r .clientSecret)
@@ -181,17 +185,6 @@ jobs:
             --destination-port-ranges 22 \
             --source-address-prefixes "$RUNNER_IP/32"
           sleep 30
-
-      - name: Diagnose SSH path to bastion and app VM
-        run: |
-          chmod 600 "$SSH_KEY_FILE"
-          echo "--- direct to bastion ---"
-          ssh -vvv -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
-            azureuser@"$BASTION_IP" "echo bastion-ok" 2>&1 | tail -60
-          echo "--- jump to app VM ---"
-          ssh -vvv -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
-            -o ProxyCommand="ssh -i $SSH_KEY_FILE -o StrictHostKeyChecking=accept-new -W %h:%p azureuser@$BASTION_IP" \
-            azureuser@"$APP_PRIVATE_IP" "echo app-vm-ok" 2>&1 | tail -60
 
       - name: Run the Ansible playbook
         working-directory: ansible
