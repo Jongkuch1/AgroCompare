@@ -173,11 +173,16 @@ jobs:
           echo "::add-mask::$ACR_PASSWORD"
           echo "ACR_USERNAME=$ACR_USERNAME" >> "$GITHUB_ENV"
           echo "ACR_PASSWORD=$ACR_PASSWORD" >> "$GITHUB_ENV"
+          chmod 600 "$SSH_KEY_FILE"
+          wc -c "$SSH_KEY_FILE"
+          ssh-keygen -l -f "$SSH_KEY_FILE" || echo "KEY DID NOT PARSE"
 
       - name: Let this runner reach the bastion over SSH (temporary rule)
         run: |
           RUNNER_IP=$(curl -s https://api.ipify.org)
-          echo "Runner IP: $RUNNER_IP"
+          RUNNER_IP2=$(curl -s https://checkip.amazonaws.com)
+          echo "Runner IP (ipify): $RUNNER_IP"
+          echo "Runner IP (amazonaws): $RUNNER_IP2"
           az network nsg rule create \
             --resource-group "$RG" --nsg-name "$NSG" \
             --name allow-ssh-github-runner --priority 120 \
