@@ -161,11 +161,7 @@ jobs:
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           umask 077
-          # Stored as base64: a raw multi-line PEM pasted into a GitHub
-          # secret is prone to silent newline/whitespace corruption, which
-          # OpenSSH rejects with "error in libcrypto". Base64 collapses it
-          # to one line that survives copy-paste intact.
-          printf '%s' "$SSH_PRIVATE_KEY" | base64 -d > "$SSH_KEY_FILE"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
           # The service principal doubles as the registry login
           ACR_USERNAME=$(echo "$AZURE_CREDENTIALS" | jq -r .clientId)
           ACR_PASSWORD=$(echo "$AZURE_CREDENTIALS" | jq -r .clientSecret)
