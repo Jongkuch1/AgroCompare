@@ -79,7 +79,7 @@ jobs:
           python-version: "3.11"
       - run: pip install checkov==3.4.3
       - name: Scan Terraform, Ansible, Dockerfiles and workflows
-        # Same accepted risks as iac-scan.yml (explained in SECURITY.md)
+        # Same accepted risks as security.yml (explained in SECURITY.md)
         run: >-
           checkov -d .
           --framework terraform ansible dockerfile github_actions

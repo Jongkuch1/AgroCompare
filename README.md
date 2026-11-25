@@ -56,7 +56,7 @@ A populated frontend does not by itself prove API connectivity. Check for the fa
 | Configuration management | Ansible |
 | Cloud services | Azure VMs, Load Balancer, Container Registry and managed PostgreSQL |
 
-The cloud architecture and deployment workflow are described below. Verify the final integration and runtime evidence before submission.
+The cloud architecture and deployment workflow are described below.
 
 ## Getting Started
 
@@ -72,8 +72,8 @@ For a container-based setup, see **Run with Docker Compose**.
 ### Clone the repository
 
 ```bash
-git clone https://github.com/Jongkuch1/sokowatch.git
-cd sokowatch
+git clone https://github.com/Jongkuch1/AgroCompare.git
+cd AgroCompare
 ```
 
 ### Start the backend
@@ -155,10 +155,10 @@ See [frontend/README.md](frontend/README.md) and [backend/README.md](backend/REA
 
 ## Links
 
-- [Repository](https://github.com/Jongkuch1/sokowatch)
+- [Repository](https://github.com/Jongkuch1/AgroCompare.git)
 - [Project Board](https://github.com/users/Jongkuch1/projects/7)
-- [Issues](https://github.com/Jongkuch1/sokowatch/issues)
-- [Pull Requests](https://github.com/Jongkuch1/sokowatch/pulls)
+- [Issues](https://github.com/Jongkuch1/AgroCompare/issues)
+- [Pull Requests](https://github.com/Jongkuch1/AgroCompare/pulls)
 - [Team Participation Sheet](https://docs.google.com/spreadsheets/d/1apJFWX5-BIjBpPVhniaPmolSvizBKX4rTitMLN0pWt4/edit?gid=0#gid=0)
 
 ## Collaboration and Branch Protection
@@ -265,15 +265,17 @@ Required checks must be configured in GitHub branch protection to prevent mergin
 
 ## Production Deployment (Azure)
 
-This section documents the team's Summative deployment design. Final workflow integration, live URLs and runtime results must be verified before submission.
+This section documents the deployed system: how it is built, how a change reaches it, and how to check that it is healthy.
 
-**Live app:** Pending — replace with the verified Terraform `app_url`.
+**Live app:** http://172.198.71.15
 
-**Health check:** Pending — the verified live URL followed by `/api/health`.
+**Health check:** http://172.198.71.15/api/health
+
+**Demo video:** [AgroCompare Summative Demo](https://www.youtube.com/watch?v=GdDI8OFYAkk)
 
 ### Architecture
 
-Solid connections show the infrastructure access paths. Dashed connections show the intended registry, database and CD integrations.
+Solid connections are in use. The dashed connection is provisioned but not yet used: the application still reads bundled JSON and does not connect to the database.
 
 ```mermaid
 flowchart TD
@@ -295,9 +297,9 @@ flowchart TD
     bastion -->|SSH| vm
     vm -.->|PostgreSQL integration| db
     dev["Developer"] -->|Merge to main| gha["GitHub Actions CD"]
-    gha -.->|Push images| acr[("Azure Container Registry")]
-    acr -.->|Pull images| vm
-    gha -.->|Ansible through bastion| bastion
+    gha -->|Push images| acr[("Azure Container Registry")]
+    acr -->|Pull images| vm
+    gha -->|Ansible through bastion| bastion
 ```
 
 | Part | Purpose | Defined in |
@@ -309,7 +311,7 @@ flowchart TD
 | Registry | Authenticated Azure Container Registry | `terraform/registry.tf` |
 | Database | Managed PostgreSQL with public access disabled | `terraform/database.tf` |
 | Configuration | Docker installation, server configuration and deployment | `ansible/` |
-| Pipeline | CI, security checks and intended CD workflow | `.github/workflows/` |
+| Pipeline | CI, security checks and the CD workflow | `.github/workflows/` |
 
 ACR has its shared administrator account disabled. Its network endpoint is public; image access requires authentication.
 
@@ -317,7 +319,7 @@ The application still reads bundled JSON data. Verify database connection settin
 
 ### How a Change Reaches Production
 
-The intended Git-to-Production sequence is:
+A change reaches production in this sequence:
 
 1. Open a pull request.
 2. Run lint, tests, dependency scans, Docker builds, image scans and IaC scans.
@@ -328,7 +330,7 @@ The intended Git-to-Production sequence is:
 7. Remove any temporary SSH rule.
 8. Smoke-test the public `/api/health` endpoint and exercise the application.
 
-Confirm these stages against the final CD workflow and a successful run. The earlier reviewed deployment role builds from a Git checkout on the VM; registry deployment and private inventory integration must be confirmed in the final implementation.
+These stages are defined in `.github/workflows/cd.yml`. The deploy role does not build on the server: it logs in to the private registry and pulls the images that the pipeline already scanned and pushed. The inventory comes from Terraform outputs locally, or from repository variables when the pipeline runs.
 
 ### Set Up from Scratch
 
@@ -337,7 +339,7 @@ Prerequisites:
 - Terraform, Azure CLI and Git.
 - An Azure subscription.
 - An SSH key pair.
-- Ansible and the `community.docker` collection.
+- Ansible and the collections in `ansible/requirements.yml` (`community.docker` and `community.general`).
 
 From the repository root:
 
@@ -366,7 +368,7 @@ Protect Terraform state: it contains the generated database password. Do not com
 
 ### Deployment Settings
 
-The colleague-provided deployment plan uses the following settings. Confirm the names against the final workflow before configuring them.
+The CD workflow reads the following settings from the repository's Actions variables and secrets.
 
 Run Terraform output commands from `terraform/`.
 
@@ -383,7 +385,7 @@ Run Terraform output commands from `terraform/`.
 | Secret | `SSH_PRIVATE_KEY` | Deployment private key |
 | Secret | `AZURE_CREDENTIALS` | Credentials for the deployment identity, if used by the final workflow |
 
-Use the cloud authentication method and permissions required by the final workflow. Never display secret values in the demo.
+`AZURE_CREDENTIALS` belongs to a service principal limited to the project's resource group. Never display secret values in the demo.
 
 Retrieve the intended public URL after provisioning:
 
@@ -448,6 +450,7 @@ Review before confirming. This removes managed resources, including the database
 - [Security findings](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Demo checklist](docs/DEMO_CHECKLIST.md)
+- [Demo video](https://www.youtube.com/watch?v=GdDI8OFYAkk)
 
 ## License
 

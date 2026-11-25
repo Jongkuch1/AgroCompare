@@ -62,6 +62,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ---------- Infrastructure as Code scanning ----------
+  iac-scan:
+    name: IaC scan (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install checkov==3.4.3
+      - name: Scan Terraform, Ansible, Dockerfiles and workflows
+        # Accepted risks are explained in SECURITY.md.
+        run: >-
+          checkov -d .
+          --framework terraform ansible dockerfile github_actions
+          --skip-check CKV_DOCKER_3,CKV2_ANSIBLE_1
+          --skip-path node_modules
+          --compact --quiet
+
   # ---------- Container image scanning ----------
   image-scan:
     name: Image scan (Trivy, ${{ matrix.name }})
