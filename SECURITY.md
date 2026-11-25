@@ -148,19 +148,14 @@ Both steps exclude unfixed vulnerabilities.
 
 #### Final Summative Results
 
-Complete this section from actual scan output.
-
 | Evidence | Backend | Frontend |
 | --- | --- | --- |
-| Run URL | Pending | Pending |
-| Source commit/image identifier | Pending | Pending |
-| Scan date | Pending | Pending |
-| HIGH findings | Pending | Pending |
-| CRITICAL findings | Pending | Pending |
-| Remediation or risk decision | Pending | Pending |
-
-If no findings are reported, record that result with the scan policy and
-run link. Do not infer zero findings from a green workflow alone.
+| Run URL | [Run 45398499542](https://github.com/Jongkuch1/AgroCompare/actions/runs/45398499542) | [Run 45398499542](https://github.com/Jongkuch1/AgroCompare/actions/runs/45398499542) |
+| Source commit/image identifier | `e818c0d` | `e818c0d` |
+| Scan date | 2026-11-24 | 2026-11-24 |
+| HIGH findings | 2 (`jaraco.context` CVE-2026-23949, `wheel` CVE-2026-24049) | 0 |
+| CRITICAL findings | 0 | 0 |
+| Remediation or risk decision | Accepted: both are fixed-version findings in Python packaging tools (`jaraco.context`, `wheel`) pulled in transitively at build time, not runtime application code. Fixes exist (6.1.0 and 0.46.2) and will be picked up on the next `backend/requirements.txt` dependency bump. The CRITICAL gate (which blocks the build) reported zero findings, so this did not require a release block. | No findings reported; recorded with the scan policy and run link rather than inferred from a green workflow alone. |
 
 ## Secret Scanning
 
