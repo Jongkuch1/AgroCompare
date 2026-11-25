@@ -452,6 +452,15 @@ Review before confirming. This removes managed resources, including the database
 - [Demo checklist](docs/DEMO_CHECKLIST.md)
 - [Demo video](https://www.youtube.com/watch?v=GdDI8OFYAkk)
 
+## AI Usage Disclosure
+
+AI tools supported this project in a review and documentation capacity:
+
+- **GitHub Copilot** reviewed pull requests throughout development.
+- **Claude Code** was used during final preparation to audit the pipeline against the assignment requirements, surface a gap in the security-scanning setup, and help document final scan results and deployment details in the README and SECURITY.md.
+
+The Terraform infrastructure, Ansible configuration, application code, and CI/CD pipeline logic were designed and implemented by the team, as reflected in the commit and pull-request history.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).
