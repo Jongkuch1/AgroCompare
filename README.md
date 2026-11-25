@@ -271,7 +271,7 @@ This section documents the deployed system: how it is built, how a change reache
 
 **Health check:** http://172.198.71.15/api/health
 
-**Demo video:** [AgroCompare Summative Demo](https://www.youtube.com/watch?v=GdDI8OFYAkk)
+**Demo video:** [AgroCompare Summative Demo](https://www.youtube.com/watch?v=zqJ7HL88Fj4)
 
 ### Architecture
 
@@ -450,7 +450,7 @@ Review before confirming. This removes managed resources, including the database
 - [Security findings](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Demo checklist](docs/DEMO_CHECKLIST.md)
-- [Demo video](https://www.youtube.com/watch?v=GdDI8OFYAkk)
+- [Demo video](https://www.youtube.com/watch?v=zqJ7HL88Fj4)
 
 ## AI Usage Disclosure
 
