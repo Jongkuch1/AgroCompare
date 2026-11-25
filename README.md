@@ -271,7 +271,7 @@ This section documents the deployed system: how it is built, how a change reache
 
 **Health check:** http://172.198.71.15/api/health
 
-**Demo video:** [AgroCompare Summative Demo](https://www.youtube.com/watch?v=GdDI8OFYAkk)
+**Demo video:** [AgroCompare Summative Demo](https://www.youtube.com/watch?v=zqJ7HL88Fj4)
 
 ### Architecture
 
@@ -450,7 +450,16 @@ Review before confirming. This removes managed resources, including the database
 - [Security findings](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 - [Demo checklist](docs/DEMO_CHECKLIST.md)
-- [Demo video](https://www.youtube.com/watch?v=GdDI8OFYAkk)
+- [Demo video](https://www.youtube.com/watch?v=zqJ7HL88Fj4)
+
+## AI Usage Disclosure
+
+AI tools supported this project in a review and documentation capacity:
+
+- **GitHub Copilot** reviewed pull requests throughout development.
+- **Claude Code** was used during final preparation to audit the pipeline against the assignment requirements, surface a gap in the security-scanning setup, and help document final scan results and deployment details in the README and SECURITY.md.
+
+The Terraform infrastructure, Ansible configuration, application code, and CI/CD pipeline logic were designed and implemented by the team, as reflected in the commit and pull-request history.
 
 ## License
 
